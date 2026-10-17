@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, Button, Field, inputClass, ErrorNote } from '@/components/ui';
+import { Card, Button, Field, inputClass, ErrorNote, LinkButton } from '@/components/ui';
 
 export default function RegisterForm({ eventId, eventSlug }: { eventId: string; eventSlug: string }) {
   const [teamName, setTeamName] = useState('');
@@ -62,12 +62,12 @@ export default function RegisterForm({ eventId, eventSlug }: { eventId: string; 
           <strong className="text-slate-700">{teamName}</strong> is in. Good luck!
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <a href={`/e/${eventSlug}/submit`} className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+          <LinkButton href={`/e/${eventSlug}/submit`}>
             Submit your project →
-          </a>
-          <a href={`/e/${eventSlug}`} className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+          </LinkButton>
+          <LinkButton href={`/e/${eventSlug}`} variant="secondary">
             Back to event
-          </a>
+          </LinkButton>
         </div>
       </Card>
     );

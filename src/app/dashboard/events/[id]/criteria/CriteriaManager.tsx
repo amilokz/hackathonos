@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Card, Button, Field, inputClass, ErrorNote } from '@/components/ui';
 
 interface Criterion {
   id: string;
@@ -133,19 +134,12 @@ export default function CriteriaManager({
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Judging criteria</h1>
-        <a href={`/dashboard/events/${eventId}/judging`} className="text-sm text-blue-600 hover:underline">
-          → Go to judging
-        </a>
-      </div>
-
+    <div className="space-y-6">
       <div
-        className={`mb-6 p-4 rounded-lg border ${
+        className={`rounded-xl border px-4 py-3 text-sm ${
           total === 100
-            ? 'bg-green-50 border-green-200 text-green-800'
-            : 'bg-amber-50 border-amber-200 text-amber-800'
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            : 'border-amber-200 bg-amber-50 text-amber-700'
         }`}
       >
         Total weight: <strong>{total}%</strong>
@@ -154,116 +148,119 @@ export default function CriteriaManager({
         )}
       </div>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      <ErrorNote message={error || null} />
 
-      <div className="space-y-3 mb-8">
+      <div className="space-y-3">
         {criteria.map((c) => (
-          <div key={c.id} className="flex items-center gap-3 p-4 bg-white border rounded-lg shadow-sm">
+          <Card key={c.id} className="p-4">
             {editing?.id === c.id ? (
-              <div className="flex-1 grid gap-2">
-                <input
-                  className="border rounded px-2 py-1"
-                  value={editing.name}
-                  onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-                />
-                <div className="flex gap-2">
+              <div className="grid gap-3">
+                <Field label="Criterion name">
                   <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    className="border rounded px-2 py-1 w-24"
-                    value={editing.weight}
-                    onChange={(e) => setEditing({ ...editing, weight: Number(e.target.value) })}
+                    className={inputClass}
+                    value={editing.name}
+                    onChange={(e) => setEditing({ ...editing, name: e.target.value })}
                   />
-                  <input
-                    className="border rounded px-2 py-1 flex-1"
-                    placeholder="Description"
-                    value={editing.description}
-                    onChange={(e) => setEditing({ ...editing, description: e.target.value })}
-                  />
+                </Field>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Weight %">
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      className={inputClass}
+                      value={editing.weight}
+                      onChange={(e) => setEditing({ ...editing, weight: Number(e.target.value) })}
+                    />
+                  </Field>
+                  <Field label="Description">
+                    <input
+                      className={inputClass}
+                      placeholder="Description"
+                      value={editing.description}
+                      onChange={(e) => setEditing({ ...editing, description: e.target.value })}
+                    />
+                  </Field>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={saveEdit} disabled={busy} className="px-3 py-1 bg-blue-600 text-white rounded text-sm">
-                    Save
-                  </button>
-                  <button onClick={() => setEditing(null)} className="px-3 py-1 border rounded text-sm">
-                    Cancel
-                  </button>
+                  <Button onClick={saveEdit} disabled={busy}>Save</Button>
+                  <Button variant="secondary" onClick={() => setEditing(null)}>Cancel</Button>
                 </div>
               </div>
             ) : (
-              <>
-                <div className="flex-1">
-                  <div className="font-medium">{c.name}</div>
-                  {c.description && <div className="text-sm text-gray-500">{c.description}</div>}
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-slate-900">{c.name}</div>
+                  {c.description && <div className="truncate text-sm text-slate-500">{c.description}</div>}
                 </div>
-                <span className="text-lg font-bold text-blue-700">{c.weight}%</span>
-                <button onClick={() => setEditing(c)} className="text-sm text-blue-600 hover:underline">
+                <span className="shrink-0 text-lg font-bold text-indigo-600">{c.weight}%</span>
+                <button onClick={() => setEditing(c)} className="shrink-0 text-sm font-semibold text-indigo-600 hover:underline">
                   Edit
                 </button>
-                <button onClick={() => remove(c.id)} className="text-sm text-red-600 hover:underline">
+                <button onClick={() => remove(c.id)} className="shrink-0 text-sm font-semibold text-red-600 hover:underline">
                   Delete
                 </button>
-              </>
+              </div>
             )}
-          </div>
+          </Card>
         ))}
         {criteria.length === 0 && (
-          <p className="text-gray-500 text-sm">No criteria yet — add some below or pick a preset.</p>
+          <Card className="p-8 text-center">
+            <p className="text-sm text-slate-500">No criteria yet — add some below or pick a preset.</p>
+          </Card>
         )}
       </div>
 
-      <form onSubmit={addCriterion} className="p-4 bg-gray-50 border rounded-lg mb-8">
-        <h2 className="font-semibold mb-3">Add criterion</h2>
-        <div className="grid gap-3 sm:grid-cols-[1fr_100px]">
-          <input
-            className="border rounded px-3 py-2"
-            placeholder="Criterion name (e.g. Innovation)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <input
-            type="number"
-            min={1}
-            max={100}
-            className="border rounded px-3 py-2"
-            placeholder="Weight %"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            required
-          />
-        </div>
-        <input
-          className="border rounded px-3 py-2 w-full mt-3"
-          placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <button
-          type="submit"
-          disabled={busy}
-          className="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          Add criterion
-        </button>
-      </form>
+      <Card className="p-6 sm:p-8">
+        <form onSubmit={addCriterion} className="space-y-4">
+          <h2 className="font-bold text-slate-900">Add criterion</h2>
+          <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
+            <Field label="Criterion name">
+              <input
+                className={inputClass}
+                placeholder="e.g. Innovation"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </Field>
+            <Field label="Weight %">
+              <input
+                type="number"
+                min={1}
+                max={100}
+                className={inputClass}
+                placeholder="20"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                required
+              />
+            </Field>
+          </div>
+          <Field label="Description (optional)">
+            <input
+              className={inputClass}
+              placeholder="What this criterion measures"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </Field>
+          <Button type="submit" disabled={busy}>
+            {busy ? 'Adding…' : 'Add criterion'}
+          </Button>
+        </form>
+      </Card>
 
-      <div className="p-4 bg-gray-50 border rounded-lg">
-        <h2 className="font-semibold mb-3">Or start from a preset</h2>
-        <div className="flex gap-3">
+      <Card className="p-6">
+        <h2 className="font-bold text-slate-900">Or start from a preset</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
           {Object.keys(PRESETS).map((key) => (
-            <button
-              key={key}
-              onClick={() => applyPreset(key)}
-              disabled={busy}
-              className="px-4 py-2 border rounded hover:bg-white disabled:opacity-50 text-sm"
-            >
+            <Button key={key} variant="secondary" onClick={() => applyPreset(key)} disabled={busy}>
               {key}
-            </button>
+            </Button>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

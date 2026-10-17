@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Card, Button, Field, inputClass, ErrorNote, SuccessNote } from '@/components/ui';
 
 const TYPES = [
   { value: 'participant', label: 'Participant' },
@@ -73,20 +74,19 @@ export default function CertificatesClient({ eventId }: { eventId: string }) {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="text-lg font-semibold">Generate certificates</h2>
-        <p className="mt-1 text-sm text-zinc-500">
-          One per line. Use <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">Name,email</code> to
+    <div className="space-y-6">
+      <Card className="p-6 sm:p-8">
+        <h2 className="text-lg font-bold text-slate-900">Generate certificates</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          One per line. Use <code className="rounded bg-slate-100 px-1 text-slate-600">Name,email</code> to
           also store the recipient&apos;s email.
         </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-[200px_1fr]">
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium">Certificate type</span>
+        <div className="mt-4 grid gap-4 sm:grid-cols-[220px_1fr]">
+          <Field label="Certificate type">
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800"
+              className={inputClass}
             >
               {TYPES.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -94,44 +94,41 @@ export default function CertificatesClient({ eventId }: { eventId: string }) {
                 </option>
               ))}
             </select>
-          </label>
+          </Field>
         </div>
-        <label className="mt-4 block">
-          <span className="mb-1 block text-sm font-medium">Recipients</span>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={6}
-            placeholder={'Ayesha Khan,ayesha@example.com\nBilal Ahmed\nSara Malik,sara@example.com'}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 font-mono text-sm dark:border-zinc-700 dark:bg-zinc-800"
-          />
-        </label>
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-        {justCreated > 0 && (
-          <p className="mt-2 text-sm text-green-700">
-            Generated {justCreated} certificate{justCreated === 1 ? '' : 's'}.
-          </p>
-        )}
-        <button
-          onClick={generate}
-          disabled={busy}
-          className="mt-4 rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
-        >
-          {busy ? 'Generating…' : 'Generate certificates'}
-        </button>
-      </div>
+        <div className="mt-4">
+          <Field label="Recipients">
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={6}
+              placeholder={'Ayesha Khan,ayesha@example.com\nBilal Ahmed\nSara Malik,sara@example.com'}
+              className={`${inputClass} font-mono`}
+            />
+          </Field>
+        </div>
+        <ErrorNote message={error || null} />
+        <SuccessNote
+          message={justCreated > 0 ? `Generated ${justCreated} certificate${justCreated === 1 ? '' : 's'}.` : null}
+        />
+        <div className="mt-4">
+          <Button onClick={generate} disabled={busy}>
+            {busy ? 'Generating…' : 'Generate certificates'}
+          </Button>
+        </div>
+      </Card>
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="text-lg font-semibold">Issued certificates ({certs.length})</h2>
+      <Card className="p-6 sm:p-8">
+        <h2 className="text-lg font-bold text-slate-900">Issued certificates ({certs.length})</h2>
         {certs.length === 0 ? (
-          <p className="mt-2 text-sm text-zinc-500">None yet.</p>
+          <p className="mt-2 text-sm text-slate-500">None yet.</p>
         ) : (
-          <ul className="mt-4 divide-y divide-zinc-100 dark:divide-zinc-800">
+          <ul className="mt-4 divide-y divide-slate-100">
             {certs.map((c) => (
               <li key={c.id} className="flex items-center justify-between gap-4 py-3">
                 <div className="min-w-0">
-                  <p className="truncate font-medium">{c.recipient_name}</p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="truncate font-semibold text-slate-900">{c.recipient_name}</p>
+                  <p className="text-xs capitalize text-slate-500">
                     {c.type} · <span className="font-mono">{c.verification_code}</span>
                   </p>
                 </div>
@@ -139,7 +136,7 @@ export default function CertificatesClient({ eventId }: { eventId: string }) {
                   href={`/cert/${c.verification_code}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="shrink-0 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700"
+                  className="shrink-0 rounded-xl border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
                   View
                 </a>
@@ -147,7 +144,7 @@ export default function CertificatesClient({ eventId }: { eventId: string }) {
             ))}
           </ul>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

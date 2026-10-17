@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Card, Button, Field, inputClass, ErrorNote, SuccessNote } from '@/components/ui';
 
 interface Settings {
   entry_fee: number;
@@ -54,79 +55,73 @@ export default function SettingsClient({ eventId }: { eventId: string }) {
     }
   }
 
-  const input =
-    'w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800';
-
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="text-lg font-semibold">Entry fee & payments</h2>
-        <p className="mt-1 text-sm text-zinc-500">
+      <Card className="p-6 sm:p-8">
+        <h2 className="text-lg font-bold text-slate-900">Entry fee & payments</h2>
+        <p className="mt-1 text-sm text-slate-500">
           Charge teams an entry fee. Payments are verified manually — put your Sadapay / bank
           details below so teams know where to send the fee.
         </p>
         <div className="mt-4 grid gap-4">
-          <label className="block max-w-xs">
-            <span className="mb-1 block text-sm font-medium">Entry fee (0 = free event)</span>
-            <input
-              type="number"
-              min={0}
-              step="any"
-              value={settings.entry_fee}
-              onChange={(e) => setSettings({ ...settings, entry_fee: Number(e.target.value) })}
-              className={input}
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium">Payment instructions</span>
+          <div className="max-w-xs">
+            <Field label="Entry fee (0 = free event)">
+              <input
+                type="number"
+                min={0}
+                step="any"
+                value={settings.entry_fee}
+                onChange={(e) => setSettings({ ...settings, entry_fee: Number(e.target.value) })}
+                className={inputClass}
+              />
+            </Field>
+          </div>
+          <Field label="Payment instructions">
             <textarea
               value={settings.payment_instructions}
               onChange={(e) => setSettings({ ...settings, payment_instructions: e.target.value })}
               rows={4}
               placeholder={'Send the entry fee to Sadapay 0312-3456789 (Ali Raza) and WhatsApp the screenshot to the same number. Your team is confirmed once payment is verified.'}
-              className={input}
+              className={inputClass}
             />
-          </label>
+          </Field>
         </div>
-      </div>
+      </Card>
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="text-lg font-semibold">White label</h2>
-        <p className="mt-1 text-sm text-zinc-500">
+      <Card className="p-6 sm:p-8">
+        <h2 className="text-lg font-bold text-slate-900">White label</h2>
+        <p className="mt-1 text-sm text-slate-500">
           Replace the “Powered by HackathonOS / AKCLNT” footer on public pages and certificates
           with your own text — useful when licensing the platform to other organizers.
         </p>
-        <label className="mt-4 flex items-center gap-3">
+        <label className="mt-4 flex cursor-pointer items-center gap-3">
           <input
             type="checkbox"
             checked={settings.white_label}
             onChange={(e) => setSettings({ ...settings, white_label: e.target.checked })}
-            className="h-5 w-5"
+            className="h-5 w-5 rounded accent-indigo-600"
           />
-          <span className="text-sm font-medium">Enable white label for this event</span>
+          <span className="text-sm font-medium text-slate-700">Enable white label for this event</span>
         </label>
         {settings.white_label && (
-          <label className="mt-4 block max-w-md">
-            <span className="mb-1 block text-sm font-medium">Custom footer text</span>
-            <input
-              value={settings.custom_footer_text}
-              onChange={(e) => setSettings({ ...settings, custom_footer_text: e.target.value })}
-              className={input}
-              placeholder="Organized by TechKhwa"
-            />
-          </label>
+          <div className="mt-4 max-w-md">
+            <Field label="Custom footer text">
+              <input
+                value={settings.custom_footer_text}
+                onChange={(e) => setSettings({ ...settings, custom_footer_text: e.target.value })}
+                className={inputClass}
+                placeholder="Organized by TechKhwa"
+              />
+            </Field>
+          </div>
         )}
-      </div>
+      </Card>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {saved && <p className="text-sm text-green-700">Settings saved.</p>}
-      <button
-        onClick={save}
-        disabled={busy}
-        className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
-      >
+      <ErrorNote message={error || null} />
+      <SuccessNote message={saved ? 'Settings saved.' : null} />
+      <Button onClick={save} disabled={busy}>
         {busy ? 'Saving…' : 'Save settings'}
-      </button>
+      </Button>
     </div>
   );
 }

@@ -1,7 +1,11 @@
 import { redirect } from 'next/navigation';
 import { getDb } from '@/lib/db';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
+import { Container, PageHeader, TopNav, LinkButton } from '@/components/ui';
+import LogoutButton from '../../../LogoutButton';
 import CriteriaManager from './CriteriaManager';
+
+export const dynamic = 'force-dynamic';
 
 export default async function CriteriaPage({ params }: { params: { id: string } }) {
   const org = await requireOrganizer();
@@ -14,13 +18,25 @@ export default async function CriteriaPage({ params }: { params: { id: string } 
     .all(params.id);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto pt-6 px-6">
-        <a href={`/dashboard/events/${params.id}`} className="text-sm text-blue-600 hover:underline">
-          ← Back to {event.name}
-        </a>
-      </div>
-      <CriteriaManager eventId={params.id} initial={criteria as never} />
+    <div className="min-h-screen bg-slate-50">
+      <TopNav title={org.name} right={<LogoutButton />} />
+      <Container className="max-w-3xl py-10">
+        <PageHeader
+          title="Judging criteria"
+          subtitle={event.name}
+          action={
+            <div className="flex flex-wrap gap-2">
+              <LinkButton href={`/dashboard/events/${params.id}`} variant="secondary">
+                ← Back to event
+              </LinkButton>
+              <LinkButton href={`/dashboard/events/${params.id}/judging`} variant="secondary">
+                Go to judging →
+              </LinkButton>
+            </div>
+          }
+        />
+        <CriteriaManager eventId={params.id} initial={criteria as never} />
+      </Container>
     </div>
   );
 }

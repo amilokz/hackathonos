@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, Button, Field, inputClass, ErrorNote } from '@/components/ui';
+import { Card, Button, Field, inputClass, ErrorNote, LinkButton } from '@/components/ui';
 
 interface TeamOption {
   id: string;
@@ -84,9 +84,11 @@ export default function SubmitForm({ eventId, eventSlug }: { eventId: string; ev
         <p className="text-3xl">🚀</p>
         <h2 className="mt-2 text-xl font-bold text-slate-900">Project submitted!</h2>
         <p className="mt-1 text-sm text-slate-500">The judges will review <strong className="text-slate-700">{title}</strong> soon.</p>
-        <a href={`/e/${eventSlug}`} className="mt-6 inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-          Back to event
-        </a>
+        <div className="mt-6">
+          <LinkButton href={`/e/${eventSlug}`} variant="secondary">
+            Back to event
+          </LinkButton>
+        </div>
       </Card>
     );
   }

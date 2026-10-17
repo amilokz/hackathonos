@@ -1,7 +1,11 @@
 import { redirect } from 'next/navigation';
 import { getDb } from '@/lib/db';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
+import { Container, PageHeader, TopNav, LinkButton } from '@/components/ui';
+import LogoutButton from '../../../LogoutButton';
 import JudgingBoard from './JudgingBoard';
+
+export const dynamic = 'force-dynamic';
 
 export default async function JudgingPage({ params }: { params: { id: string } }) {
   const org = await requireOrganizer();
@@ -74,30 +78,36 @@ export default async function JudgingPage({ params }: { params: { id: string } }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto pt-6 px-6 flex items-center justify-between">
-        <div>
-          <a href={`/dashboard/events/${params.id}`} className="text-sm text-blue-600 hover:underline">
-            ← Back to {event.name}
-          </a>
-          <h1 className="text-2xl font-bold mt-1">Judging</h1>
-        </div>
-        <a
-          href={`/e/${event.slug}/leaderboard`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-sm px-4 py-2 border rounded hover:bg-white"
-        >
-          View public leaderboard ↗
-        </a>
-      </div>
-      <JudgingBoard
-        eventId={params.id}
-        criteria={criteria as never}
-        projects={projects as never}
-        initialScores={scoresByProject}
-        initialAi={aiByProject as never}
-      />
+    <div className="min-h-screen bg-slate-50">
+      <TopNav title={org.name} right={<LogoutButton />} />
+      <Container className="max-w-6xl py-10">
+        <PageHeader
+          title="Judging"
+          subtitle={event.name}
+          action={
+            <div className="flex flex-wrap gap-2">
+              <LinkButton href={`/dashboard/events/${params.id}`} variant="secondary">
+                ← Back to event
+              </LinkButton>
+              <a
+                href={`/e/${event.slug}/leaderboard`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                View public leaderboard ↗
+              </a>
+            </div>
+          }
+        />
+        <JudgingBoard
+          eventId={params.id}
+          criteria={criteria as never}
+          projects={projects as never}
+          initialScores={scoresByProject}
+          initialAi={aiByProject as never}
+        />
+      </Container>
     </div>
   );
 }

@@ -1,10 +1,17 @@
 # HackathonOS — Handover Guide
 
+> **Integration status (2026-10-17):** Build green, end-to-end tested, UI polished.
+> Vercel project `hackathonos` (`prj_8NrbgHQJtHXQ3rplyjUDTMekqgBt`) created with
+> `SESSION_SECRET` set. **Deploy pending:** code needs a GitHub repo
+> (`amilokz/hackathonos`) — create it, push, then connect to the Vercel project
+> (see "Deploy to Vercel" below).
+
 HackathonOS is a complete hackathon/event management platform: events, team
 registrations, project submissions, AI-assisted judging, live leaderboards,
 QR-verified certificates, sponsors, and monetization settings. Built with
-Next.js 14 (App Router), TypeScript, Tailwind CSS, SQLite (better-sqlite3),
-and Groq AI (free tier) for judging.
+Next.js 14 (App Router), TypeScript, Tailwind CSS, **libsql** (`@libsql/client`;
+SQLite-compatible, file DB locally / Turso in production), and Groq AI
+(free tier) for judging.
 
 ## Run it locally
 
@@ -18,9 +25,36 @@ npm run dev                  # http://localhost:3000
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `SESSION_SECRET` | Yes | HMAC secret signing organizer session cookies. Use a long random string. |
-| `GROQ_API_KEY` | For AI judging | Free key from console.groq.com — powers the AI pre-score. |
+| `SESSION_SECRET` | Yes | HMAC secret signing organizer session cookies. Use a long random string. (Already set on the Vercel project.) |
+| `GROQ_API_KEY` | For AI judging | Free key from console.groq.com — powers the AI pre-score. Without it, manual judge scoring still works fully. |
+| `DATABASE_URL` | Production | Turso DB URL (`libsql://…`). Without it, Vercel runs on an ephemeral `/tmp` file — data is lost on redeploy. See "Production database" below. |
+| `TURSO_AUTH_TOKEN` | With DATABASE_URL | Auth token for the Turso database. |
 | `NEXT_PUBLIC_BASE_URL` | Production | e.g. `https://hackathon.yourdomain.com`. Used for QR codes on certificates and verification links. Falls back to the request host when unset. |
+
+## Production database
+
+The app uses `@libsql/client`, which speaks the SQLite dialect everywhere:
+
+- **Local dev:** `./data/hackathonos.db` (file, created automatically; `migrate()` creates all tables).
+- **Vercel without `DATABASE_URL`:** `/tmp/hackathonos.db` — works, but **ephemeral** (each deploy/instance starts empty). Fine for a demo, not for real events.
+- **Vercel with Turso (recommended, free tier):**
+  1. Create a free database at turso.tech (or `turso db create hackathonos`).
+  2. Get the URL (`turso db show hackathonos --url`) and a token (`turso db tokens create hackathonos`).
+  3. Set `DATABASE_URL` and `TURSO_AUTH_TOKEN` on the Vercel project (production + preview).
+  4. Redeploy. Tables are created automatically on first request.
+
+## Deploy to Vercel
+
+1. Create an empty GitHub repo `amilokz/hackathonos` (the GitHub App cannot create repos itself).
+2. Push the code: `git remote add origin https://github.com/amilokz/hackathonos.git && git push -u origin main`
+   (local repo already has the full history committed in `~/workspace/hackathonos`).
+3. In the Vercel dashboard, open the existing `hackathonos` project → Settings → Git → connect the repo (auto-deploys on push).
+4. Set env vars on the project: `SESSION_SECRET` ✅ already set; add `GROQ_API_KEY`, `DATABASE_URL` + `TURSO_AUTH_TOKEN` (see above), and `NEXT_PUBLIC_BASE_URL` once the domain is known.
+5. Deploy. Verify: homepage loads and `/api/health` returns `{"ok":true,"db":true}`.
+
+> **Note:** `better-sqlite3` was replaced with `@libsql/client` during integration
+> because native modules don't work on Vercel serverless. All queries were
+> converted to async/await; table schemas are unchanged.
 
 ## Build & production start
 
@@ -93,3 +127,26 @@ Put Nginx/Caddy in front as a reverse proxy to `localhost:3000` for HTTPS.
 - **Sponsor slots** — logo placement on the event page, live leaderboard and certificates.
 - **Paid entries** — entry fees with manual payment verification.
 - **White-label licensing** — run the platform for other organizers/universities with their branding.
+
+## Integration test report (2026-10-17)
+
+End-to-end tested against `npm run dev` with the libsql file DB. All passing:
+
+- Organizer register → login (session cookie) → create event (5 default criteria auto-seeded) → publish
+- Team registration (public) + duplicate-name 409 rejection
+- Project submission (public) + resubmit updates existing
+- Judge scores: batch submit, resubmit overwrites (upsert), invalid score 400, unknown project 400
+- AI pre-score without `GROQ_API_KEY` → clean 400 "not configured" (correct behavior)
+- Public leaderboard API + page (judge names hidden), public event page
+- Certificates: bulk create → `/cert/[code]` (QR + print) → `/verify/[code]` shows "Certificate verified"
+- Results API math verified (weighted 0–100 totals, ranks)
+- Landing page, `/api/health` → `{"ok":true,"db":true}`
+- Test data deleted after the run (FK cascades verified working)
+
+## What's left
+
+1. **GitHub repo** — create `amilokz/hackathonos`, push, connect to the Vercel `hackathonos` project (see "Deploy to Vercel").
+2. **Turso database** — recommended before any real event (see "Production database").
+3. **Groq API key** — free at console.groq.com, enables the AI pre-score button.
+4. **Demo for sir (TechKhwa)** — suggested flow: register organizer → create event → publish → open `/e/[slug]` → register a team → submit a project → score it in Judging → show leaderboard → generate a certificate.
+5. **Handover to TechKhwa** — give them the repo + this guide; they set their own `SESSION_SECRET`, domain, and `NEXT_PUBLIC_BASE_URL`.

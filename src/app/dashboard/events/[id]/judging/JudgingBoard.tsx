@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Card, Button, Field, inputClass, ErrorNote } from '@/components/ui';
 
 interface Criterion {
   id: string;
@@ -134,17 +135,18 @@ export default function JudgingBoard({
 
   if (projects.length === 0) {
     return (
-      <div className="max-w-3xl mx-auto p-6">
-        <p className="text-gray-500">No project submissions yet for this event.</p>
-      </div>
+      <Card className="p-10 text-center">
+        <p className="text-lg font-semibold text-slate-900">No project submissions yet</p>
+        <p className="mt-1 text-sm text-slate-500">Projects will appear here once teams submit.</p>
+      </Card>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 grid gap-6 lg:grid-cols-[280px_1fr]">
+    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
       {/* Project list */}
       <div>
-        <h2 className="font-semibold mb-3 text-sm uppercase tracking-wide text-gray-500">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-widest text-slate-400">
           Projects ({projects.length})
         </h2>
         <div className="space-y-2">
@@ -159,15 +161,15 @@ export default function JudgingBoard({
                   setForm({});
                   setError('');
                 }}
-                className={`w-full text-left p-3 rounded-lg border ${
+                className={`w-full rounded-xl border p-3 text-left transition ${
                   p.id === selectedId
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'bg-white hover:border-gray-300'
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-slate-200 bg-white hover:border-slate-300'
                 }`}
               >
-                <div className="font-medium text-sm">{p.title}</div>
-                <div className="text-xs text-gray-500">{p.team_name}</div>
-                <div className="text-xs mt-1 text-gray-400">
+                <div className="text-sm font-semibold text-slate-900">{p.title}</div>
+                <div className="text-xs text-slate-500">{p.team_name}</div>
+                <div className="mt-1 text-xs text-slate-400">
                   {n > 0 ? `${Array.from(new Set((scores[p.id] ?? []).map((s) => s.judge_name))).length} judge(s)` : 'No scores yet'}
                   {hasAi && <span className="ml-2 text-purple-600">🤖 AI scored</span>}
                 </div>
@@ -177,7 +179,7 @@ export default function JudgingBoard({
         </div>
         <a
           href={`/dashboard/events/${eventId}/criteria`}
-          className="block mt-4 text-sm text-blue-600 hover:underline"
+          className="mt-4 block text-sm font-semibold text-indigo-600 hover:underline"
         >
           Edit judging criteria →
         </a>
@@ -186,40 +188,40 @@ export default function JudgingBoard({
       {/* Scoring panel */}
       {project && (
         <div className="space-y-6">
-          <div className="bg-white border rounded-lg p-5 shadow-sm">
-            <h2 className="text-xl font-bold">{project.title}</h2>
-            <p className="text-sm text-gray-500 mb-3">by {project.team_name}</p>
-            {project.description && <p className="text-sm mb-3">{project.description}</p>}
+          <Card className="p-5">
+            <h2 className="text-xl font-bold tracking-tight text-slate-900">{project.title}</h2>
+            <p className="mb-3 text-sm text-slate-500">by {project.team_name}</p>
+            {project.description && <p className="mb-3 text-sm text-slate-600">{project.description}</p>}
             <div className="flex flex-wrap gap-3 text-sm">
               {project.demo_url && (
-                <a href={project.demo_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                <a href={project.demo_url} target="_blank" rel="noreferrer" className="font-medium text-indigo-600 hover:underline">
                   🔗 Live demo
                 </a>
               )}
               {project.repo_url && (
-                <a href={project.repo_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                <a href={project.repo_url} target="_blank" rel="noreferrer" className="font-medium text-indigo-600 hover:underline">
                   💻 Repository
                 </a>
               )}
             </div>
             {project.pitch_text && (
               <details className="mt-3 text-sm">
-                <summary className="cursor-pointer text-blue-600">Read pitch</summary>
-                <p className="mt-2 whitespace-pre-wrap text-gray-700">{project.pitch_text}</p>
+                <summary className="cursor-pointer font-medium text-indigo-600">Read pitch</summary>
+                <p className="mt-2 whitespace-pre-wrap text-slate-600">{project.pitch_text}</p>
               </details>
             )}
-          </div>
+          </Card>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          <ErrorNote message={error || null} />
 
           {/* AI pre-score */}
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-5">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-purple-900">🤖 AI pre-score</h3>
+          <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5 shadow-sm">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="font-bold text-purple-900">🤖 AI pre-score</h3>
               <button
                 onClick={runAiScore}
                 disabled={aiBusy}
-                className="px-4 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 disabled:opacity-50"
+                className="rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:opacity-50"
               >
                 {aiBusy ? 'Scoring…' : ai ? 'Re-run AI score' : 'AI Score this project'}
               </button>
@@ -233,39 +235,39 @@ export default function JudgingBoard({
               <div>
                 <button
                   onClick={() => setShowAi({ ...showAi, [project.id]: !showAi[project.id] })}
-                  className="text-sm text-purple-700 hover:underline mb-2"
+                  className="mb-2 text-sm font-medium text-purple-700 hover:underline"
                 >
                   {showAi[project.id] ? 'Hide AI breakdown' : `Show AI breakdown (overall ${ai.overall}/100)`}
                 </button>
                 {showAi[project.id] && (
                   <div className="space-y-3 text-sm">
-                    <div className="text-3xl font-bold text-purple-900">{ai.overall}<span className="text-base text-purple-500">/100</span></div>
+                    <div className="text-3xl font-extrabold tracking-tight text-purple-900">{ai.overall}<span className="text-base font-medium text-purple-500">/100</span></div>
                     {ai.breakdown.map((b, i) => (
-                      <div key={i} className="bg-white rounded p-3 border border-purple-100">
-                        <div className="flex justify-between font-medium">
+                      <div key={i} className="rounded-xl border border-purple-100 bg-white p-3">
+                        <div className="flex justify-between font-semibold text-slate-900">
                           <span>{b.criterion}</span>
                           <span className="text-purple-700">{b.score_0_10}/10</span>
                         </div>
-                        <p className="text-gray-600 mt-1">{b.reason}</p>
+                        <p className="mt-1 text-slate-600">{b.reason}</p>
                       </div>
                     ))}
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <div className="bg-white rounded p-3 border border-purple-100">
-                        <div className="font-medium text-green-700 mb-1">Strengths</div>
-                        <ul className="list-disc list-inside text-gray-700 space-y-1">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl border border-purple-100 bg-white p-3">
+                        <div className="mb-1 font-semibold text-emerald-700">Strengths</div>
+                        <ul className="list-inside list-disc space-y-1 text-slate-700">
                           {ai.strengths.map((s, i) => <li key={i}>{s}</li>)}
                         </ul>
                       </div>
-                      <div className="bg-white rounded p-3 border border-purple-100">
-                        <div className="font-medium text-red-700 mb-1">Weaknesses</div>
-                        <ul className="list-disc list-inside text-gray-700 space-y-1">
+                      <div className="rounded-xl border border-purple-100 bg-white p-3">
+                        <div className="mb-1 font-semibold text-red-700">Weaknesses</div>
+                        <ul className="list-inside list-disc space-y-1 text-slate-700">
                           {ai.weaknesses.map((s, i) => <li key={i}>{s}</li>)}
                         </ul>
                       </div>
                     </div>
-                    <div className="bg-white rounded p-3 border border-purple-100">
-                      <div className="font-medium mb-1">Questions to ask the team</div>
-                      <ul className="list-disc list-inside text-gray-700 space-y-1">
+                    <div className="rounded-xl border border-purple-100 bg-white p-3">
+                      <div className="mb-1 font-semibold text-slate-900">Questions to ask the team</div>
+                      <ul className="list-inside list-disc space-y-1 text-slate-700">
                         {ai.questions.map((s, i) => <li key={i}>{s}</li>)}
                       </ul>
                     </div>
@@ -276,104 +278,103 @@ export default function JudgingBoard({
           </div>
 
           {/* Human scoring form */}
-          <form onSubmit={submitScores} className="bg-white border rounded-lg p-5 shadow-sm">
-            <h3 className="font-semibold mb-4">Your scores</h3>
-            <label className="block mb-4">
-              <span className="text-sm text-gray-600">Judge name</span>
-              <input
-                className="mt-1 border rounded px-3 py-2 w-full max-w-xs"
-                placeholder="e.g. Kashif Ali"
-                value={judgeName}
-                onChange={(e) => setJudgeName(e.target.value)}
-                required
-              />
-            </label>
-            <div className="space-y-4">
-              {criteria.map((c) => (
-                <div key={c.id}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium">
-                      {c.name} <span className="text-gray-400">({c.weight}%)</span>
-                    </span>
-                    <span className="font-bold text-blue-700">{form[c.id] ?? 0}/10</span>
+          <Card className="p-5 sm:p-6">
+            <form onSubmit={submitScores} className="space-y-4">
+              <h3 className="font-bold text-slate-900">Your scores</h3>
+              <Field label="Judge name">
+                <input
+                  className={inputClass}
+                  placeholder="e.g. Kashif Ali"
+                  value={judgeName}
+                  onChange={(e) => setJudgeName(e.target.value)}
+                  required
+                />
+              </Field>
+              <div className="space-y-4">
+                {criteria.map((c) => (
+                  <div key={c.id}>
+                    <div className="mb-1 flex justify-between text-sm">
+                      <span className="font-semibold text-slate-900">
+                        {c.name} <span className="font-normal text-slate-400">({c.weight}%)</span>
+                      </span>
+                      <span className="font-bold text-indigo-600">{form[c.id] ?? 0}/10</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={10}
+                      step={0.5}
+                      value={form[c.id] ?? 0}
+                      onChange={(e) => setForm({ ...form, [c.id]: Number(e.target.value) })}
+                      className="w-full accent-indigo-600"
+                    />
+                    {c.description && <p className="text-xs text-slate-400">{c.description}</p>}
                   </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={10}
-                    step={0.5}
-                    value={form[c.id] ?? 0}
-                    onChange={(e) => setForm({ ...form, [c.id]: Number(e.target.value) })}
-                    className="w-full"
-                  />
-                  {c.description && <p className="text-xs text-gray-400">{c.description}</p>}
+                ))}
+              </div>
+              {criteria.length === 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                  No judging criteria defined yet.{' '}
+                  <a href={`/dashboard/events/${eventId}/criteria`} className="font-semibold underline">
+                    Set them up first
+                  </a>
+                  .
                 </div>
-              ))}
-            </div>
-            {criteria.length === 0 && (
-              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3">
-                No judging criteria defined yet.{' '}
-                <a href={`/dashboard/events/${eventId}/criteria`} className="underline">
-                  Set them up first
-                </a>
-                .
-              </p>
-            )}
-            <label className="block mt-4">
-              <span className="text-sm text-gray-600">Notes (optional)</span>
-              <textarea
-                className="mt-1 border rounded px-3 py-2 w-full"
-                rows={2}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={busy || criteria.length === 0}
-              className="mt-4 px-5 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {busy ? 'Saving…' : 'Submit scores'}
-            </button>
-          </form>
+              )}
+              <Field label="Notes (optional)">
+                <textarea
+                  className={inputClass}
+                  rows={2}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </Field>
+              <Button
+                type="submit"
+                disabled={busy || criteria.length === 0}
+              >
+                {busy ? 'Saving…' : 'Submit scores'}
+              </Button>
+            </form>
+          </Card>
 
           {/* Existing scores */}
           {judges.length > 0 && (
-            <div className="bg-white border rounded-lg p-5 shadow-sm">
-              <h3 className="font-semibold mb-3">Scores so far</h3>
+            <Card className="p-5">
+              <h3 className="mb-3 font-bold text-slate-900">Scores so far</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-gray-500">
-                      <th className="pb-2">Judge</th>
+                    <tr className="text-left text-slate-500">
+                      <th className="pb-2 pr-3 font-semibold">Judge</th>
                       {criteria.map((c) => (
-                        <th key={c.id} className="pb-2">{c.name}</th>
+                        <th key={c.id} className="pb-2 pr-3 font-semibold">{c.name}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {judges.map((j) => (
-                      <tr key={j} className="border-t">
-                        <td className="py-2 font-medium">{j}</td>
+                      <tr key={j} className="border-t border-slate-100">
+                        <td className="py-2 pr-3 font-semibold text-slate-900">{j}</td>
                         {criteria.map((c) => {
                           const s = projectScores.find(
                             (x) => x.judge_name === j && x.criteria_id === c.id
                           );
-                          return <td key={c.id} className="py-2">{s ? s.score : '—'}</td>;
+                          return <td key={c.id} className="py-2 pr-3 text-slate-600">{s ? s.score : '—'}</td>;
                         })}
                       </tr>
                     ))}
-                    <tr className="border-t font-bold bg-gray-50">
-                      <td className="py-2">Average</td>
+                    <tr className="border-t border-slate-100 bg-slate-50 font-bold">
+                      <td className="py-2 pr-3 text-slate-900">Average</td>
                       {criteria.map((c) => {
                         const a = avgFor(c.id);
-                        return <td key={c.id} className="py-2">{a ?? '—'}</td>;
+                        return <td key={c.id} className="py-2 pr-3 text-slate-900">{a ?? '—'}</td>;
                       })}
                     </tr>
                   </tbody>
                 </table>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       )}

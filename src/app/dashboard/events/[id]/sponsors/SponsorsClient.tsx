@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Card, Button, Field, inputClass, ErrorNote } from '@/components/ui';
 
 const TIERS = ['platinum', 'gold', 'silver'];
 
@@ -82,29 +83,24 @@ export default function SponsorsClient({ eventId }: { eventId: string }) {
     if (res.ok) await load();
   }
 
-  const input =
-    'w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800';
-
   return (
-    <div className="space-y-8">
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="text-lg font-semibold">{editingId ? 'Edit sponsor' : 'Add sponsor'}</h2>
+    <div className="space-y-6">
+      <Card className="p-6 sm:p-8">
+        <h2 className="text-lg font-bold text-slate-900">{editingId ? 'Edit sponsor' : 'Add sponsor'}</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium">Name *</span>
+          <Field label="Name *">
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className={input}
+              className={inputClass}
               placeholder="Acme Corp"
             />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium">Tier</span>
+          </Field>
+          <Field label="Tier">
             <select
               value={form.tier}
               onChange={(e) => setForm({ ...form, tier: e.target.value })}
-              className={input}
+              className={inputClass}
             >
               {TIERS.map((t) => (
                 <option key={t} value={t}>
@@ -112,51 +108,45 @@ export default function SponsorsClient({ eventId }: { eventId: string }) {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium">Logo URL</span>
+          </Field>
+          <Field label="Logo URL">
             <input
               value={form.logo_url}
               onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-              className={input}
+              className={inputClass}
               placeholder="https://…/logo.png"
             />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium">Website</span>
+          </Field>
+          <Field label="Website">
             <input
               value={form.website}
               onChange={(e) => setForm({ ...form, website: e.target.value })}
-              className={input}
+              className={inputClass}
               placeholder="https://acme.com"
             />
-          </label>
+          </Field>
         </div>
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        <ErrorNote message={error || null} />
         <div className="mt-4 flex gap-2">
-          <button
-            onClick={save}
-            disabled={busy}
-            className="rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
-          >
+          <Button onClick={save} disabled={busy}>
             {busy ? 'Saving…' : editingId ? 'Save changes' : 'Add sponsor'}
-          </button>
+          </Button>
           {editingId && (
-            <button onClick={cancelEdit} className="rounded-lg border border-zinc-300 px-5 py-2.5 text-sm dark:border-zinc-700">
+            <Button variant="secondary" onClick={cancelEdit}>
               Cancel
-            </button>
+            </Button>
           )}
         </div>
-      </div>
+      </Card>
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="text-lg font-semibold">Sponsors ({sponsors.length})</h2>
+      <Card className="p-6 sm:p-8">
+        <h2 className="text-lg font-bold text-slate-900">Sponsors ({sponsors.length})</h2>
         {sponsors.length === 0 ? (
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-slate-500">
             None yet. Sponsors appear on the public event page once added.
           </p>
         ) : (
-          <ul className="mt-4 divide-y divide-zinc-100 dark:divide-zinc-800">
+          <ul className="mt-4 divide-y divide-slate-100">
             {sponsors.map((s) => (
               <li key={s.id} className="flex items-center justify-between gap-4 py-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -164,25 +154,25 @@ export default function SponsorsClient({ eventId }: { eventId: string }) {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={s.logo_url} alt={s.name} className="h-10 w-10 rounded object-contain" />
                   ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded bg-zinc-100 text-sm font-bold dark:bg-zinc-800">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-sm font-bold text-slate-500">
                       {s.name[0]?.toUpperCase()}
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{s.name}</p>
-                    <p className="text-xs capitalize text-zinc-500">{s.tier}</p>
+                    <p className="truncate font-semibold text-slate-900">{s.name}</p>
+                    <p className="text-xs capitalize text-slate-500">{s.tier}</p>
                   </div>
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <button
                     onClick={() => startEdit(s)}
-                    className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700"
+                    className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => remove(s.id)}
-                    className="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 dark:border-red-900"
+                    className="rounded-xl border border-red-200 px-3 py-1.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
                   >
                     Remove
                   </button>
@@ -191,7 +181,7 @@ export default function SponsorsClient({ eventId }: { eventId: string }) {
             ))}
           </ul>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

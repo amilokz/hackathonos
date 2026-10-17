@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
 import { migrate } from '@/lib/db';
+import { Container, PageHeader, TopNav, LinkButton } from '@/components/ui';
+import LogoutButton from '../../../LogoutButton';
 import CertificatesClient from './CertificatesClient';
 
 export const dynamic = 'force-dynamic';
@@ -9,22 +11,24 @@ export default async function CertificatesPage({ params }: { params: { id: strin
   await migrate();
   const organizer = await requireOrganizer();
   if (!organizer) redirect('/login');
-  const event = await getOwnedEvent(params.id, organizer.id) as { name: string } | null;
+  const event = await getOwnedEvent(params.id, organizer.id);
   if (!event) redirect('/dashboard');
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <a href={`/dashboard/events/${params.id}`} className="text-sm text-zinc-500 hover:underline">
-        ← Back to event
-      </a>
-      <h1 className="mt-2 text-2xl font-bold">Certificates — {event.name}</h1>
-      <p className="mt-1 text-sm text-zinc-500">
-        Generate printable, QR-verified certificates. Recipients can verify at{' '}
-        <span className="font-mono">/verify/&lt;code&gt;</span>.
-      </p>
-      <div className="mt-6">
+    <div className="min-h-screen bg-slate-50">
+      <TopNav title={organizer.name} right={<LogoutButton />} />
+      <Container className="max-w-3xl py-10">
+        <PageHeader
+          title="Certificates"
+          subtitle={`${event.name} · QR-verified, printable`}
+          action={
+            <LinkButton href={`/dashboard/events/${params.id}`} variant="secondary">
+              ← Back to event
+            </LinkButton>
+          }
+        />
         <CertificatesClient eventId={params.id} />
-      </div>
+      </Container>
     </div>
   );
 }
