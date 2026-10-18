@@ -38,6 +38,44 @@ async function getPastEvents() {
   }>;
 }
 
+async function getLiveEvents() {
+  await migrate();
+  const db = getDb();
+  return (await db
+    .prepare(
+      `SELECT e.id, e.name, e.slug, e.cover_url, e.description, e.start_date, e.end_date,
+              (SELECT COUNT(*) FROM teams t WHERE t.event_id = e.id) AS team_count
+       FROM events e WHERE e.status = 'published'
+       ORDER BY e.start_date ASC, e.created_at DESC`
+    )
+    .all()) as Array<{
+    id: string;
+    name: string;
+    slug: string;
+    cover_url: string;
+    description: string;
+    start_date: string;
+    end_date: string;
+    team_count: number;
+  }>;
+}
+
+async function getStats() {
+  await migrate();
+  const db = getDb();
+  const events = (
+    (await db
+      .prepare(`SELECT COUNT(*) AS c FROM events WHERE status IN ('published','closed')`)
+      .get()) as { c: number }
+  ).c;
+  const teams = ((await db.prepare(`SELECT COUNT(*) AS c FROM teams`).get()) as { c: number }).c;
+  const projects = ((await db.prepare(`SELECT COUNT(*) AS c FROM projects`).get()) as { c: number }).c;
+  const certificates = (
+    (await db.prepare(`SELECT COUNT(*) AS c FROM certificates`).get()) as { c: number }
+  ).c;
+  return { events, teams, projects, certificates };
+}
+
 const FEATURES = [
   {
     title: "Events & Registrations",
@@ -345,8 +383,156 @@ function OrganizerSpotlight() {
   );
 }
 
+function LiveNow({ events }: { events: Awaited<ReturnType<typeof getLiveEvents>> }) {
+  if (events.length === 0) return null;
+  return (
+    <section className="border-b border-slate-200/70 bg-gradient-to-b from-indigo-50/60 to-white">
+      <div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
+        <p className="flex items-center justify-center gap-2 text-center text-sm font-bold uppercase tracking-widest text-emerald-600">
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-500" />
+          Live now
+        </p>
+        <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">
+          Hackathons accepting teams right now
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-center text-slate-600">
+          Registrations are open. Pick your event, gather your team, and start building.
+        </p>
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {events.map((e) => {
+            const dates = [formatDate(e.start_date), formatDate(e.end_date)].filter(Boolean).join(" → ");
+            return (
+              <div
+                key={e.id}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              >
+                {e.cover_url?.trim() ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={e.cover_url} alt={`${e.name} cover`} className="h-44 w-full object-cover" />
+                ) : (
+                  <div className="flex h-44 w-full items-center justify-center bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600">
+                    <span className="text-4xl">⚡</span>
+                  </div>
+                )}
+                <div className="flex flex-1 flex-col p-5">
+                  <h3 className="text-lg font-bold text-slate-900">{e.name}</h3>
+                  {e.description && (
+                    <p className="mt-1.5 line-clamp-2 text-sm text-slate-500">{e.description}</p>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                    {dates && (
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">📅 {dates}</span>
+                    )}
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700">
+                      👥 {e.team_count} {e.team_count === 1 ? "team" : "teams"} in
+                    </span>
+                  </div>
+                  <div className="mt-5 flex flex-wrap gap-2 pt-1">
+                    <a
+                      href={`/e/${e.slug}/register`}
+                      className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-indigo-700"
+                    >
+                      Register now →
+                    </a>
+                    <a
+                      href={`/e/${e.slug}`}
+                      className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700"
+                    >
+                      View event
+                    </a>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StatsBand({ stats }: { stats: Awaited<ReturnType<typeof getStats>> }) {
+  const items = [
+    { value: stats.events, label: "Hackathons run" },
+    { value: stats.teams, label: "Teams registered" },
+    { value: stats.projects, label: "Projects submitted" },
+    { value: stats.certificates, label: "Certificates issued" },
+  ];
+  if (items.every((i) => i.value === 0)) return null;
+  return (
+    <section className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700">
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-8 px-4 py-14 sm:px-6 lg:grid-cols-4">
+        {items.map((i) => (
+          <div key={i.label} className="text-center">
+            <p className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+              {i.value.toLocaleString()}
+            </p>
+            <p className="mt-2 text-sm font-medium uppercase tracking-widest text-indigo-200">{i.label}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const FAQS = [
+  {
+    q: "Is HackathonOS really free?",
+    a: "Yes — creating events, team registrations, project submissions, judging, leaderboards and certificates are all free for organizers. There are no credit-card walls and no team limits.",
+  },
+  {
+    q: "Do I need to install anything?",
+    a: "No. HackathonOS runs entirely in the browser — for you as the organizer, for judges scoring projects, and for teams registering and submitting. Share a link and you're live.",
+  },
+  {
+    q: "How does AI judging work?",
+    a: "Every submitted project can get an AI pre-score across your own judging criteria (innovation, execution, impact…). Add a free Groq API key in your settings to enable it. Judges always have the final say — the AI score is a starting point, not a verdict.",
+  },
+  {
+    q: "Who owns my event data?",
+    a: "You do. Your teams, projects, scores and certificates belong to your organization. Nothing is sold, shared, or used to train models.",
+  },
+  {
+    q: "Can sponsors be featured?",
+    a: "Yes. Add sponsors in tiers (platinum, gold, silver, bronze) with their logos, and they appear on your event page, the live leaderboard and even on certificates — real, measurable visibility.",
+  },
+  {
+    q: "How do certificates verify?",
+    a: "Every certificate carries a unique QR code that links to a public verification page. Anyone — employers, universities — can scan it and confirm the certificate is genuine, forever.",
+  },
+];
+
+function FaqSection() {
+  return (
+    <section className="mx-auto w-full max-w-3xl px-4 py-20 sm:px-6">
+      <p className="text-center text-sm font-bold uppercase tracking-widest text-indigo-600">FAQ</p>
+      <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">
+        Questions, answered honestly
+      </h2>
+      <div className="mt-10 space-y-3">
+        {FAQS.map((f) => (
+          <details
+            key={f.q}
+            className="group rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition open:border-indigo-200 open:shadow-md"
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
+              {f.q}
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-lg font-bold text-indigo-600 transition group-open:rotate-45">
+                +
+              </span>
+            </summary>
+            <p className="mt-3 text-sm leading-relaxed text-slate-600">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default async function Home() {
   const pastEvents = await getPastEvents();
+  const liveEvents = await getLiveEvents();
+  const stats = await getStats();
   return (
     <main className="min-h-screen bg-white text-slate-900">
       {/* Nav */}
@@ -440,6 +626,9 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Live now — published events accepting registrations */}
+      <LiveNow events={liveEvents} />
+
       {/* Event photo gallery */}
       <EventGallery />
 
@@ -489,11 +678,17 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Stats band */}
+      <StatsBand stats={stats} />
+
       {/* Organizer spotlight */}
       <OrganizerSpotlight />
 
       {/* Past hackathons preview */}
       <PastHackathons events={pastEvents} />
+
+      {/* FAQ */}
+      <FaqSection />
 
       {/* CTA */}
       <section id="cta" className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">

@@ -4,6 +4,7 @@ import { requireOrganizer } from '@/lib/require-organizer';
 import { Container, Card, PageHeader, LinkButton, TopNav } from '@/components/ui';
 import LogoutButton from './LogoutButton';
 import PublishToggle from '@/components/PublishToggle';
+import SeedDemoButton from './SeedDemoButton';
 import type { EventRow } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -52,6 +53,7 @@ export default async function DashboardPage() {
             <div className="mt-6">
               <LinkButton href="/dashboard/events/new">+ Create your first event</LinkButton>
             </div>
+            <SeedDemoButton />
           </Card>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
