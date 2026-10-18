@@ -218,6 +218,14 @@ const DDL = `
       FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
       UNIQUE (event_id, team_id, member_name)
     );
+
+    CREATE TABLE IF NOT EXISTS announcements (
+      id TEXT PRIMARY KEY,
+      event_id TEXT NOT NULL,
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+    );
 `;
 
 /**
