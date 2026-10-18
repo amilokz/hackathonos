@@ -30,7 +30,107 @@ export interface LiveData {
         /** Per-criterion average judge score (0-10) for the top-3 breakdown strip. */
         breakdown: { criterion: string; average: number }[];
       }[]
-    | null;  sponsors: { name: string; logo_url: string; tier: string }[];
+    | null;
+  sponsors: { name: string; logo_url: string; tier: string }[];
+}
+
+/* ── Inline SVG icon set (lucide-style, 24 viewBox, stroke) ── */
+const ICON_PATHS: Record<string, React.ReactNode> = {
+  users: (
+    <>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </>
+  ),
+  rocket: (
+    <>
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+      <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+    </>
+  ),
+  scale: (
+    <>
+      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
+      <path d="M7 21h10" />
+      <path d="M12 3v18" />
+      <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
+    </>
+  ),
+  'badge-check': (
+    <>
+      <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  ),
+  trophy: (
+    <>
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </>
+  ),
+  megaphone: (
+    <>
+      <path d="m3 11 18-5v12L3 14v-3z" />
+      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+    </>
+  ),
+  'alert-triangle': (
+    <>
+      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </>
+  ),
+  'arrow-left': (
+    <>
+      <path d="m12 19-7-7 7-7" />
+      <path d="M19 12H5" />
+    </>
+  ),
+};
+
+function Icon({ name, className = 'h-5 w-5' }: { name: string; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      {ICON_PATHS[name]}
+    </svg>
+  );
+}
+
+/** Rank medal: SVG circle in gold/silver/bronze with the rank number. */
+function MedalIcon({ rank, className = 'h-12 w-12 md:h-16 md:w-16' }: { rank: number; className?: string }) {
+  const styles =
+    rank === 1
+      ? 'from-amber-300 to-amber-500 text-amber-950 ring-amber-200/60'
+      : rank === 2
+        ? 'from-slate-200 to-slate-400 text-slate-800 ring-slate-300/60'
+        : 'from-amber-600 to-amber-800 text-amber-50 ring-amber-700/60';
+  return (
+    <span
+      className={`inline-flex items-center justify-center rounded-full bg-gradient-to-b font-black ring-2 ${styles} ${className}`}
+      aria-label={`Rank ${rank}`}
+    >
+      <span className="text-xl md:text-2xl">{rank}</span>
+    </span>
+  );
 }
 
 function pad(n: number) {
@@ -39,11 +139,11 @@ function pad(n: number) {
 
 function CountdownUnit({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex min-w-0 flex-col items-center">
-      <div className="rounded-2xl bg-slate-800/80 px-2 py-1.5 text-3xl font-black tabular-nums text-white shadow-lg ring-1 ring-slate-700 md:px-3 md:text-4xl lg:px-4 lg:text-5xl">
+    <div className="flex min-w-0 shrink-0 flex-col items-center">
+      <div className="rounded-2xl bg-slate-800/80 px-3 py-2 text-4xl font-black tabular-nums text-white shadow-lg ring-1 ring-slate-700 md:px-4 md:py-2.5 md:text-5xl lg:text-6xl">
         {value}
       </div>
-      <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 md:text-xs">
+      <div className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 md:text-xs">
         {label}
       </div>
     </div>
@@ -62,13 +162,15 @@ function StatTile({
   accent: string;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-slate-900/70 p-3 ring-1 ring-slate-800 md:p-4">
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl md:h-12 md:w-12 md:text-2xl ${accent}`}>
-        {icon}
+    <div className="flex min-w-0 items-center gap-3 rounded-2xl bg-slate-900/70 p-3 ring-1 ring-slate-800 md:gap-4 md:p-5">
+      <div
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl md:h-14 md:w-14 ${accent}`}
+      >
+        <Icon name={icon} className="h-6 w-6 md:h-7 md:w-7" />
       </div>
       <div className="min-w-0">
-        <div className="truncate text-2xl font-black text-white md:text-4xl">{value}</div>
-        <div className="truncate text-[10px] font-semibold uppercase tracking-widest text-slate-400 md:text-xs">
+        <div className="truncate text-2xl font-black tabular-nums text-white md:text-4xl">{value}</div>
+        <div className="truncate text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 md:text-xs">
           {label}
         </div>
       </div>
@@ -120,22 +222,19 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
   const podiumStyle = (rank: number) => {
     if (rank === 1)
       return {
-        bar: 'bg-gradient-to-b from-amber-300 to-amber-500 text-amber-950 ring-amber-200',
-        h: 'h-40 md:h-52',
-        medal: '🥇',
+        platform: 'bg-gradient-to-b from-amber-300 via-amber-400 to-amber-600 text-amber-950 ring-amber-200/50',
+        h: 'h-44 md:h-60',
         delay: '0.35s',
       };
     if (rank === 2)
       return {
-        bar: 'bg-gradient-to-b from-slate-200 to-slate-400 text-slate-800 ring-slate-300',
-        h: 'h-28 md:h-36',
-        medal: '🥈',
+        platform: 'bg-gradient-to-b from-slate-200 via-slate-300 to-slate-500 text-slate-800 ring-slate-300/40',
+        h: 'h-32 md:h-44',
         delay: '0.15s',
       };
     return {
-      bar: 'bg-gradient-to-b from-amber-600 to-amber-800 text-amber-50 ring-amber-700',
-      h: 'h-20 md:h-28',
-      medal: '🥉',
+      platform: 'bg-gradient-to-b from-amber-500 via-amber-700 to-amber-900 text-amber-50 ring-amber-600/40',
+      h: 'h-24 md:h-32',
       delay: '0.55s',
     };
   };
@@ -146,10 +245,12 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
         @keyframes hcc-marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes hcc-rise { 0% { transform: translateY(70px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
         @keyframes hcc-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        @keyframes hcc-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
         .hcc-marquee-track { display: flex; width: max-content; animation: hcc-marquee 30s linear infinite; }
         .hcc-marquee-slow { animation-duration: 45s; }
         .hcc-rise { animation: hcc-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
         .hcc-blink { animation: hcc-blink 1s step-start infinite; }
+        .hcc-glow { animation: hcc-glow 2.4s ease-in-out infinite; }
       `}</style>
 
       {/* ── Header ─────────────────────────────────────────── */}
@@ -161,9 +262,10 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
           {!kiosk && (
             <a
               href={`/e/${data.eventSlug}`}
-              className="mt-0.5 inline-block text-xs text-indigo-300 hover:underline md:text-sm"
+              className="mt-0.5 inline-flex items-center gap-1 text-xs text-indigo-300 hover:underline md:text-sm"
             >
-              ← View event page
+              <Icon name="arrow-left" className="h-3.5 w-3.5" />
+              View event page
             </a>
           )}
         </div>
@@ -178,71 +280,78 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
         </div>
       </header>
 
-      {/* ── Deadline alert ─────────────────────────────────── */}
+      {/* ── Deadline alerts ────────────────────────────────── */}
       {withinHour && (
-        <div className="hcc-blink shrink-0 bg-gradient-to-r from-amber-600 via-red-600 to-amber-600 px-4 py-2 text-center text-lg font-black uppercase tracking-widest md:text-2xl">
-          ⚠ Submissions close in {pad(mm)}:{pad(ss)}
+        <div className="hcc-blink flex shrink-0 items-center justify-center gap-3 bg-gradient-to-r from-amber-600 via-red-600 to-amber-600 px-4 py-2 text-center text-lg font-black uppercase tracking-widest md:text-2xl">
+          <Icon name="alert-triangle" className="h-6 w-6 md:h-8 md:w-8" />
+          <span>
+            Submissions close in {pad(mm)}:{pad(ss)}
+          </span>
         </div>
       )}
       {deadlineAlerts.map((a) => (
         <div
           key={a.id}
-          className="hcc-blink shrink-0 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 px-4 py-2 text-center text-lg font-black uppercase tracking-widest text-white md:text-2xl"
+          className="hcc-blink flex shrink-0 items-center justify-center gap-3 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 px-4 py-2 text-center text-lg font-black uppercase tracking-widest text-white md:text-2xl"
         >
-          ⚠️ {a.title ? `${a.title}: ` : ''}
-          {a.message}
+          <Icon name="alert-triangle" className="h-6 w-6 shrink-0 md:h-8 md:w-8" />
+          <span className="min-w-0">
+            {a.title ? `${a.title}: ` : ''}
+            {a.message}
+          </span>
         </div>
       ))}
 
       {/* ── Countdown + stat tiles ─────────────────────────── */}
-      <section className="grid shrink-0 grid-cols-1 gap-4 px-4 pt-4 md:px-8 lg:grid-cols-12">
-        <div className="min-w-0 overflow-hidden rounded-3xl bg-slate-900/70 p-4 ring-1 ring-slate-800 md:p-6 lg:col-span-5">
-          <div className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-slate-400 md:text-sm">
+      <section className="grid shrink-0 grid-cols-1 gap-4 px-4 pt-4 md:gap-5 md:px-8 md:pt-5 lg:grid-cols-12">
+        <div className="min-w-0 rounded-3xl bg-slate-900/70 p-4 ring-1 ring-slate-800 md:p-6 lg:col-span-5">
+          <div className="mb-3 flex items-center justify-center gap-2 text-center text-xs font-bold uppercase tracking-[0.2em] text-slate-400 md:mb-4 md:text-sm">
+            <Icon name="alert-triangle" className="hidden h-4 w-4" />
             {validDeadline ? 'Submissions close in' : 'Countdown'}
           </div>
           {validDeadline ? (
             closed ? (
-              <div className="py-4 text-center text-4xl font-black uppercase tracking-widest text-red-500 md:text-6xl">
+              <div className="py-6 text-center text-4xl font-black uppercase tracking-widest text-red-500 md:py-8 md:text-6xl">
                 Submissions closed
               </div>
             ) : (
-              <div className="flex items-start justify-center gap-1 md:gap-2">
+              <div className="flex items-start justify-center gap-1.5 md:gap-3">
                 <CountdownUnit value={pad(dd)} label="days" />
-                <span className="pt-1 text-2xl font-black text-slate-600 md:pt-2 md:text-4xl">:</span>
+                <span className="pt-2 text-2xl font-black text-slate-600 md:pt-3 md:text-4xl">:</span>
                 <CountdownUnit value={pad(hh)} label="hrs" />
-                <span className="pt-1 text-2xl font-black text-slate-600 md:pt-2 md:text-4xl">:</span>
+                <span className="pt-2 text-2xl font-black text-slate-600 md:pt-3 md:text-4xl">:</span>
                 <CountdownUnit value={pad(mm)} label="min" />
-                <span className="pt-1 text-2xl font-black text-slate-600 md:pt-2 md:text-4xl">:</span>
+                <span className="pt-2 text-2xl font-black text-slate-600 md:pt-3 md:text-4xl">:</span>
                 <CountdownUnit value={pad(ss)} label="sec" />
               </div>
             )
           ) : (
-            <div className="py-4 text-center text-2xl font-bold text-slate-500 md:text-4xl">
+            <div className="py-6 text-center text-2xl font-bold text-slate-500 md:py-8 md:text-4xl">
               No deadline set
             </div>
           )}
         </div>
         <div className="grid min-w-0 grid-cols-2 gap-3 md:gap-4 lg:col-span-7">
           <StatTile
-            icon="👥"
+            icon="users"
             label="Registered teams"
             value={String(data.teamsCount)}
             accent="bg-indigo-500/20 text-indigo-300"
           />
           <StatTile
-            icon="🚀"
+            icon="rocket"
             label="Projects submitted"
             value={String(data.projectsCount)}
             accent="bg-emerald-500/20 text-emerald-300"
           />
           <StatTile
-            icon="⚖️"
+            icon="scale"
             label="Judging progress"
             value={`${data.judgingPct}%`}
             accent="bg-amber-500/20 text-amber-300"
           />
           <StatTile
-            icon="✅"
+            icon="badge-check"
             label="Check-ins"
             value={String(data.checkinsCount)}
             accent="bg-sky-500/20 text-sky-300"
@@ -252,9 +361,10 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
 
       {/* ── Announcements ticker ───────────────────────────── */}
       <section className="flex shrink-0 items-center overflow-hidden border-y border-slate-800 bg-slate-900 py-2.5 md:py-3">
-        <div className="z-10 shrink-0 border-r border-slate-700 bg-slate-900 px-3 py-1 md:px-5">
-          <span className="text-xs font-black uppercase tracking-widest text-amber-300 md:text-sm">
-            📢 Live
+        <div className="z-10 flex shrink-0 items-center gap-2 border-r border-slate-700 bg-slate-900 px-3 py-1 md:gap-2.5 md:px-5">
+          <Icon name="megaphone" className="h-4 w-4 text-amber-300 md:h-5 md:w-5" />
+          <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-300 md:text-sm">
+            Live
           </span>
         </div>
         <div className="hcc-marquee-track min-w-0 flex-1 items-center gap-10">
@@ -262,8 +372,9 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
             <div key={copy} className="flex items-center gap-10" aria-hidden={copy === 1}>
               {tickerItems.map((msg, i) => (
                 <span key={`${copy}-${i}`} className="flex items-center gap-10 whitespace-nowrap">
-                  <span className="text-base font-semibold text-indigo-200 md:text-2xl">
-                    📣 {msg}
+                  <span className="flex items-center gap-3 text-base font-semibold text-indigo-200 md:gap-4 md:text-2xl">
+                    <Icon name="megaphone" className="h-5 w-5 shrink-0 text-indigo-400 md:h-6 md:w-6" />
+                    {msg}
                   </span>
                   <span className="text-slate-600">•</span>
                 </span>
@@ -274,12 +385,12 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
       </section>
 
       {/* ── Judging progress bar ───────────────────────────── */}
-      <section className="shrink-0 px-4 pt-3 md:px-8">
-        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-widest text-slate-400 md:text-sm">
-          <span>
+      <section className="w-full shrink-0 px-4 pt-3 md:px-8 md:pt-4">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-400 md:text-sm">
+          <span className="min-w-0 truncate">
             Judging progress · {data.scoredCells}/{data.totalCells} scores
           </span>
-          <span className="text-indigo-300">{data.judgingPct}%</span>
+          <span className="shrink-0 tabular-nums text-indigo-300">{data.judgingPct}%</span>
         </div>
         <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-800 md:h-4">
           <div
@@ -290,27 +401,28 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
       </section>
 
       {/* ── Podium ─────────────────────────────────────────── */}
-      <section className="flex min-h-0 flex-1 flex-col justify-center px-4 py-2 md:px-8">
+      <section className="flex min-h-0 w-full flex-1 flex-col justify-center px-4 py-2 md:px-8">
         {data.podium ? (
-          <div>
-            <h2 className="mb-2 text-center text-lg font-black uppercase tracking-widest text-amber-300 md:text-2xl">
-              🏆 Winners
+          <div className="w-full">
+            <h2 className="mb-3 flex items-center justify-center gap-3 text-center text-lg font-black uppercase tracking-[0.2em] text-amber-300 md:mb-4 md:text-2xl">
+              <Icon name="trophy" className="h-6 w-6 md:h-8 md:w-8" />
+              Winners
             </h2>
-            <div className="flex items-end justify-center gap-3 md:gap-6">
+            <div className="flex items-end justify-center gap-3 md:gap-8">
               {podiumOrder.map((w, idx) => {
                 const rank = data.podium!.indexOf(w) + 1;
                 const s = podiumStyle(rank);
                 return (
                   <div
                     key={w.team_name + idx}
-                    className="hcc-rise flex w-40 flex-col items-center md:w-64"
+                    className="hcc-rise flex w-40 min-w-0 flex-col items-center md:w-72"
                     style={{ animationDelay: s.delay }}
                   >
-                    <div className="mb-1 text-3xl md:text-5xl">{s.medal}</div>
-                    <div className="mb-2 w-full rounded-xl bg-slate-900/70 px-2 py-1.5 text-center ring-1 ring-slate-800">
+                    <MedalIcon rank={rank} />
+                    <div className="mb-3 mt-2 w-full rounded-xl bg-slate-900/70 px-2 py-1.5 text-center ring-1 ring-slate-800">
                       <div className="truncate text-sm font-black md:text-xl">{w.team_name}</div>
                       <div className="truncate text-[10px] text-slate-400 md:text-xs">{w.title}</div>
-                      <div className="text-xs font-bold text-indigo-300 md:text-base">
+                      <div className="text-xs font-bold tabular-nums text-indigo-300 md:text-base">
                         {w.score} pts
                       </div>
                       {w.breakdown.length > 0 && (
@@ -324,8 +436,9 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
                         </div>
                       )}
                     </div>
+                    {/* 3-tier platform */}
                     <div
-                      className={`flex w-full ${s.h} items-end justify-center rounded-t-2xl pb-3 ring-1 ${s.bar}`}
+                      className={`flex w-full ${s.h} flex-col items-center justify-end rounded-t-2xl pb-3 ring-1 ${s.platform}`}
                     >
                       <span className="text-4xl font-black md:text-6xl">{rank}</span>
                     </div>
@@ -335,12 +448,18 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
             </div>
           </div>
         ) : (
-          <div className="rounded-3xl bg-slate-900/50 py-6 text-center ring-1 ring-slate-800 md:py-10">
-            <div className="text-4xl md:text-6xl">🏆</div>
-            <p className="mt-2 text-xl font-black tracking-wide text-slate-200 md:text-3xl">
+          <div className="relative mx-auto w-full max-w-3xl overflow-hidden rounded-3xl bg-slate-900/50 py-8 text-center ring-1 ring-slate-800 md:py-12">
+            {/* decorative glow rings */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="hcc-glow h-48 w-48 rounded-full bg-indigo-500/10 blur-2xl md:h-72 md:w-72" />
+            </div>
+            <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-b from-amber-300/20 to-amber-600/20 ring-1 ring-amber-400/30 md:h-28 md:w-28">
+              <Icon name="trophy" className="h-10 w-10 text-amber-300 md:h-14 md:w-14" />
+            </div>
+            <p className="relative mt-4 text-xl font-black tracking-wide text-slate-100 md:text-3xl">
               Winners will be revealed here
             </p>
-            <p className="mt-1 text-sm text-slate-500 md:text-base">
+            <p className="relative mt-2 text-sm text-slate-500 md:text-base">
               {data.status === 'closed'
                 ? 'Results are being finalized…'
                 : 'Stay tuned — the podium appears when judging closes.'}
@@ -351,8 +470,8 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
 
       {/* ── Sponsor strip ──────────────────────────────────── */}
       {data.sponsors.length > 0 && (
-        <section className="shrink-0 overflow-hidden border-t border-slate-800 bg-slate-900/60 py-2 md:py-3">
-          <div className="mb-1 text-center text-[10px] font-bold uppercase tracking-widest text-slate-500 md:text-xs">
+        <section className="w-full shrink-0 overflow-hidden border-t border-slate-800 bg-slate-900/60 py-2 md:py-3">
+          <div className="mb-1 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 md:text-xs">
             Sponsors
           </div>
           <div className="hcc-marquee-track hcc-marquee-slow items-center gap-12">
