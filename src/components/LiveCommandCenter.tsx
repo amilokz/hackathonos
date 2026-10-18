@@ -134,7 +134,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
   };
 
   return (
-    <div className="flex h-dvh flex-col overflow-y-auto bg-slate-950 text-white md:overflow-hidden">
+    <div className="flex h-dvh flex-col overflow-x-clip overflow-y-auto bg-slate-950 text-white md:overflow-hidden">
       <style>{`
         @keyframes hcc-marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes hcc-rise { 0% { transform: translateY(70px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
@@ -244,8 +244,13 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
       </section>
 
       {/* ── Announcements ticker ───────────────────────────── */}
-      <section className="shrink-0 overflow-hidden border-y border-slate-800 bg-slate-900 px-0 py-2.5 md:py-3">
-        <div className="hcc-marquee-track items-center gap-10">
+      <section className="flex shrink-0 items-center overflow-hidden border-y border-slate-800 bg-slate-900 py-2.5 md:py-3">
+        <div className="z-10 shrink-0 border-r border-slate-700 bg-slate-900 px-3 py-1 md:px-5">
+          <span className="text-xs font-black uppercase tracking-widest text-amber-300 md:text-sm">
+            📢 Live
+          </span>
+        </div>
+        <div className="hcc-marquee-track min-w-0 flex-1 items-center gap-10">
           {[0, 1].map((copy) => (
             <div key={copy} className="flex items-center gap-10" aria-hidden={copy === 1}>
               {tickerItems.map((msg, i) => (
