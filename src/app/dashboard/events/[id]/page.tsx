@@ -56,11 +56,17 @@ export default async function ManageEventPage({ params }: { params: { id: string
             </Card>
             <Card className="p-5">
               <h2 className="font-bold text-slate-900">Quick links</h2>
-              <ul className="mt-3 space-y-2 text-sm">
-                <li><a className="text-indigo-600 hover:underline" href={`/e/${event.slug}/leaderboard`}>Leaderboard (public)</a></li>
-                <li><a className="text-indigo-600 hover:underline" href={`/e/${event.slug}/register`}>Team registration (public)</a></li>
-                <li><a className="text-indigo-600 hover:underline" href={`/e/${event.slug}/submit`}>Project submission (public)</a></li>
-              </ul>
+              {event.status === 'published' ? (
+                <ul className="mt-3 space-y-2 text-sm">
+                  <li><a className="text-indigo-600 hover:underline" href={`/e/${event.slug}/leaderboard`}>Leaderboard (public)</a></li>
+                  <li><a className="text-indigo-600 hover:underline" href={`/e/${event.slug}/register`}>Team registration (public)</a></li>
+                  <li><a className="text-indigo-600 hover:underline" href={`/e/${event.slug}/submit`}>Project submission (public)</a></li>
+                </ul>
+              ) : (
+                <p className="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                  ⚠️ Event is in <strong>Draft</strong> — public links are disabled. Set Status to <strong>Published</strong> above and save to activate them.
+                </p>
+              )}
             </Card>
           </div>
         </div>
