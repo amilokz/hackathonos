@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import { getDb } from '@/lib/db';
+import { logActivity } from '@/lib/activity';
 import { ownedCheckinEvent, findTeamByCode } from '@/lib/checkin-auth';
 
 const CheckInSchema = z.object({
@@ -71,6 +72,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       { status: 409 },
     );
   }
+
+  // Fire-and-forget dashboard activity log — never blocks check-in.
+  void logActivity(db, event.id, 'checkin', `${data.member_name} (${team.name}) checked in`);
 
   return NextResponse.json({
     ok: true,

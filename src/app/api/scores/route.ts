@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { getDb } from '@/lib/db';
+import { logActivity } from '@/lib/activity';
 import { requireOrganizerFromRequest } from '@/lib/require-organizer';
 
 interface ScoreInput {
@@ -91,6 +92,25 @@ export async function POST(req: NextRequest) {
       });
     }
     await db.batch(batch);
+
+    // Fire-and-forget dashboard activity log — one entry per (judge, project),
+    // never blocks the scoring response.
+    void (async () => {
+      const seen = new Set<string>();
+      for (const v of validated) {
+        const key = `${v.project_id}|${v.judge_name}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const info = (await db
+          .prepare(
+            'SELECT p.title AS title, t.event_id AS event_id FROM projects p JOIN teams t ON t.id = p.team_id WHERE p.id = ?',
+          )
+          .get(v.project_id)) as { title: string; event_id: string } | undefined;
+        if (info) {
+          await logActivity(db, info.event_id, 'score_completed', `Judge ${v.judge_name} scored "${info.title}"`);
+        }
+      }
+    })();
 
     const saved = validated.map(({ id, project_id, judge_name, criteria_id, score, notes }) => ({
       id,

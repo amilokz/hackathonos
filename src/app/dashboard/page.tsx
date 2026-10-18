@@ -3,18 +3,23 @@ import { getDb, migrate } from '@/lib/db';
 import { requireOrganizer } from '@/lib/require-organizer';
 import OrganizerShell from '@/components/OrganizerShell';
 import EmptyState from '@/components/EmptyState';
+import EventCard from '@/components/EventCard';
 import { Container, Card, PageHeader, LinkButton } from '@/components/ui';
 import SeedDemoButton from './SeedDemoButton';
 import InviteCodes from '@/components/InviteCodes';
+import UpcomingDeadlines, {
+  filterUpcomingDeadlines,
+  type DeadlineEvent,
+} from '@/components/dashboard/UpcomingDeadlines';
+import RecentRegistrations, { type RecentTeam } from '@/components/dashboard/RecentRegistrations';
+import DashboardPendingApprovals, {
+  type DashboardPendingTeam,
+} from '@/components/dashboard/PendingApprovals';
+import LatestSubmissions, { type DashboardSubmission } from '@/components/dashboard/LatestSubmissions';
+import ActivityFeed, { type ActivityEntry } from '@/components/dashboard/ActivityFeed';
 import type { EventRow } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
-
-const STATUS_STYLES: Record<string, string> = {
-  draft: 'bg-amber-100 text-amber-800',
-  published: 'bg-emerald-100 text-emerald-700',
-  closed: 'bg-slate-200 text-slate-600',
-};
 
 interface DashboardStats {
   totalEvents: number;
@@ -89,6 +94,71 @@ async function getEventCardStats(eventId: string): Promise<EventCardStats> {
   return { approvedTeams, pendingTeams, projects };
 }
 
+async function getDashboardInsights(orgId: string): Promise<{
+  deadlines: DeadlineEvent[];
+  registrations: RecentTeam[];
+  pendingTeams: DashboardPendingTeam[];
+  submissions: DashboardSubmission[];
+  activity: ActivityEntry[];
+}> {
+  const db = getDb();
+
+  const deadlines = (await db
+    .prepare(
+      `SELECT id, name, end_date FROM events
+       WHERE organizer_id = ? AND status = 'published'
+         AND end_date IS NOT NULL AND TRIM(end_date) <> ''
+       ORDER BY end_date ASC LIMIT 20`,
+    )
+    .all(orgId)) as DeadlineEvent[];
+
+  const registrations = (await db
+    .prepare(
+      `SELECT t.id, t.name, t.event_id, e.name AS event_name, t.created_at
+       FROM teams t JOIN events e ON e.id = t.event_id
+       WHERE e.organizer_id = ?
+       ORDER BY t.created_at DESC LIMIT 8`,
+    )
+    .all(orgId)) as RecentTeam[];
+
+  const pendingTeams = (await db
+    .prepare(
+      `SELECT t.id, t.name, t.contact_name, t.contact_email, t.event_id, e.name AS event_name, t.created_at
+       FROM teams t JOIN events e ON e.id = t.event_id
+       WHERE e.organizer_id = ? AND t.approval_status = 'pending'
+       ORDER BY t.created_at DESC LIMIT 12`,
+    )
+    .all(orgId)) as DashboardPendingTeam[];
+
+  const submissions = (await db
+    .prepare(
+      `SELECT p.id, p.title, t.name AS team_name, t.event_id AS event_id, e.name AS event_name, p.created_at
+       FROM projects p
+       JOIN teams t ON t.id = p.team_id
+       JOIN events e ON e.id = t.event_id
+       WHERE e.organizer_id = ?
+       ORDER BY p.created_at DESC LIMIT 8`,
+    )
+    .all(orgId)) as DashboardSubmission[];
+
+  const activity = (await db
+    .prepare(
+      `SELECT a.id, a.type, a.message, a.created_at
+       FROM activity_log a JOIN events e ON e.id = a.event_id
+       WHERE e.organizer_id = ?
+       ORDER BY a.created_at DESC LIMIT 15`,
+    )
+    .all(orgId)) as ActivityEntry[];
+
+  return {
+    deadlines: filterUpcomingDeadlines(deadlines),
+    registrations,
+    pendingTeams,
+    submissions,
+    activity,
+  };
+}
+
 function StatTile({ icon, label, value, hint }: { icon: string; label: string; value: number; hint: string }) {
   return (
     <Card className="p-5 transition hover:shadow-md">
@@ -106,87 +176,6 @@ function StatTile({ icon, label, value, hint }: { icon: string; label: string; v
   );
 }
 
-function EventCard({ event, stats }: { event: EventRow; stats: EventCardStats }) {
-  const cover = (event.cover_url ?? '').trim() || (event.logo_url ?? '').trim();
-  const actionBtn =
-    'inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-semibold transition';
-  return (
-    <Card className="flex flex-col overflow-hidden transition hover:shadow-lg">
-      {cover ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={cover} alt={`${event.name} cover`} className="h-36 w-full object-cover" />
-      ) : (
-        <div
-          className="flex h-36 w-full items-center justify-center bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800"
-          aria-hidden="true"
-        >
-          <span className="px-4 text-center text-2xl font-extrabold tracking-tight text-white/90">
-            {event.name}
-          </span>
-        </div>
-      )}
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-lg font-bold text-slate-900">{event.name}</h3>
-          <span
-            className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold capitalize ${
-              STATUS_STYLES[event.status] ?? STATUS_STYLES.draft
-            }`}
-          >
-            {event.status}
-          </span>
-        </div>
-        <p className="mt-1 font-mono text-xs text-slate-400">/e/{event.slug}</p>
-        <div className="mt-3 flex items-center gap-4 text-sm text-slate-600">
-          <span>
-            👥 <strong className="text-slate-900">{stats.approvedTeams}</strong> teams
-          </span>
-          <span>
-            🚀 <strong className="text-slate-900">{stats.projects}</strong> projects
-          </span>
-          {stats.pendingTeams > 0 && (
-            <a
-              href={`/dashboard/events/${event.id}#teams`}
-              className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 transition hover:bg-amber-200"
-              title="Teams awaiting approval"
-            >
-              {stats.pendingTeams} pending
-            </a>
-          )}
-        </div>
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <a
-            href={`/dashboard/events/${event.id}`}
-            className={`${actionBtn} border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700`}
-          >
-            ⚙️ Manage
-          </a>
-          <a
-            href={`/dashboard/events/${event.id}/analytics`}
-            className={`${actionBtn} border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700`}
-          >
-            📊 Analytics
-          </a>
-          <a
-            href={`/dashboard/events/${event.id}/checkin`}
-            className={`${actionBtn} border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700`}
-          >
-            📱 Check-in
-          </a>
-          <a
-            href={`/e/${event.slug}/live`}
-            target="_blank"
-            rel="noreferrer"
-            className={`${actionBtn} border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700`}
-          >
-            🖥️ Live screen
-          </a>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 export default async function DashboardPage() {
   const org = await requireOrganizer();
   if (!org) redirect('/login');
@@ -198,13 +187,14 @@ export default async function DashboardPage() {
     .all(org.id)) as EventRow[];
 
   const stats = await getDashboardStats(org.id);
+  const insights = await getDashboardInsights(org.id);
   const cardStats = new Map<string, EventCardStats>();
   for (const e of events) {
     cardStats.set(e.id, await getEventCardStats(e.id));
   }
 
   return (
-    <OrganizerShell organizer={org} active="dashboard">
+    <OrganizerShell organizer={org} active="overview">
       <Container className="py-8 sm:py-10">
         <PageHeader
           title="Welcome back 👋"
@@ -233,6 +223,26 @@ export default async function DashboardPage() {
             value={stats.certificatesIssued}
             hint="QR-verified participant certificates"
           />
+        </section>
+
+        {/* insight sections */}
+        <section aria-label="Insights" className="mt-10">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <UpcomingDeadlines events={insights.deadlines} viewAllHref="/dashboard#events" />
+            <RecentRegistrations teams={insights.registrations} viewAllHref="/dashboard#events" />
+            <DashboardPendingApprovals
+              teams={insights.pendingTeams}
+              viewAllHref={
+                insights.pendingTeams[0]
+                  ? `/dashboard/events/${insights.pendingTeams[0].event_id}#teams`
+                  : '/dashboard#events'
+              }
+            />
+            <LatestSubmissions projects={insights.submissions} viewAllHref="/dashboard#events" />
+          </div>
+          <div className="mt-4">
+            <ActivityFeed entries={insights.activity} />
+          </div>
         </section>
 
         {/* events */}
@@ -264,15 +274,17 @@ export default async function DashboardPage() {
             </Card>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {events.map((e) => (
-                <EventCard
-                  key={e.id}
-                  event={e}
-                  stats={
-                    cardStats.get(e.id) ?? { approvedTeams: 0, pendingTeams: 0, projects: 0 }
-                  }
-                />
-              ))}
+              {events.map((e) => {
+                const s = cardStats.get(e.id) ?? { approvedTeams: 0, pendingTeams: 0, projects: 0 };
+                return (
+                  <EventCard
+                    key={e.id}
+                    event={e}
+                    teams={s.approvedTeams + s.pendingTeams}
+                    projects={s.projects}
+                  />
+                );
+              })}
               {/* New event card */}
               <a
                 href="/dashboard/events/new"

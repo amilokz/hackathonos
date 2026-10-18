@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getDb, migrate } from '@/lib/db';
+import { logActivity } from '@/lib/activity';
 import { ensureAnnouncementColumns, ANNOUNCEMENT_TYPES } from '@/lib/announcement-columns';
 import { requireOrganizerFromRequest, getOwnedEvent } from '@/lib/require-organizer';
 
@@ -68,5 +69,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const announcement = await db
     .prepare(`SELECT ${ANNOUNCEMENT_COLUMNS} FROM announcements WHERE id = ?`)
     .get(id);
+  // Fire-and-forget dashboard activity log — never blocks the announcement.
+  const label = title || (message.length > 70 ? `${message.slice(0, 70)}…` : message);
+  void logActivity(db, params.id, 'announcement', `Announcement: ${label}`);
   return Response.json({ announcement }, { status: 201 });
 }

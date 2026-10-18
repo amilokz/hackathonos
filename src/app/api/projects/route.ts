@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import { getDb, migrate } from '@/lib/db';
+import { logActivity } from '@/lib/activity';
 
 const SubmitProjectSchema = z.object({
   teamId: z.string().trim().min(1),
@@ -32,8 +33,8 @@ export async function POST(req: NextRequest) {
 
   await migrate();
   const db = getDb();
-  const team = await db.prepare('SELECT id, event_id FROM teams WHERE id = ?').get(data.teamId) as
-    | { id: string; event_id: string }
+  const team = await db.prepare('SELECT id, event_id, name FROM teams WHERE id = ?').get(data.teamId) as
+    | { id: string; event_id: string; name: string }
     | undefined;
   if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
 
@@ -69,5 +70,7 @@ export async function POST(req: NextRequest) {
     `INSERT INTO projects (id, team_id, title, description, demo_url, repo_url, pitch_text, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(id, data.teamId, data.title, data.description, data.demo_url, data.repo_url, data.pitch_text, now);
+  // Fire-and-forget dashboard activity log — never blocks the submission.
+  void logActivity(db, team.event_id, 'project_submitted', `Project "${data.title}" submitted by ${team.name}`);
   return NextResponse.json({ ok: true, id }, { status: 201 });
 }

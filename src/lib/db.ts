@@ -355,6 +355,21 @@ const DDL = `
 
     CREATE INDEX IF NOT EXISTS idx_contact_messages_created ON contact_messages(created_at);
     CREATE INDEX IF NOT EXISTS idx_contact_messages_read ON contact_messages(read);
+
+    -- Organizer dashboard activity feed: one row per noteworthy event.
+    -- type is one of: team_registered, project_submitted, score_completed,
+    -- checkin, announcement.
+    CREATE TABLE IF NOT EXISTS activity_log (
+      id TEXT PRIMARY KEY,
+      event_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_activity_log_event ON activity_log(event_id);
+    CREATE INDEX IF NOT EXISTS idx_activity_log_created ON activity_log(created_at);
 `;
 
 /**

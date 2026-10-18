@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import { getDb, migrate } from '@/lib/db';
+import { logActivity } from '@/lib/activity';
 import { registrationConfirmation, sendEmail } from '@/lib/email';
 
 const CreateTeamSchema = z.object({
@@ -64,6 +65,9 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'A team with this name already registered for the event' }, { status: 409 });
   }
+
+  // Fire-and-forget dashboard activity log — never blocks registration.
+  void logActivity(db, data.eventId, 'team_registered', `Team "${data.name}" registered`);
 
   // Fire-and-forget registration confirmation email — never blocks registration.
   (async () => {
