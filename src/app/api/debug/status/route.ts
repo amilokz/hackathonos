@@ -30,6 +30,9 @@ export async function GET() {
   }
   return NextResponse.json({
     dbKind,
+    databaseUrlSet: !!process.env.DATABASE_URL,
+    databaseUrlPrefix: (process.env.DATABASE_URL || '').slice(0, 25),
+    tursoUrlSet: !!process.env.TURSO_DATABASE_URL,
     eventCount: events.length,
     events: events.map((e) => ({ name: e.name, slug: e.slug, status: e.status })),
     liveNowCount: liveNow.length,
