@@ -1,24 +1,41 @@
 import type { ReactNode } from 'react';
 import NewsletterForm from './NewsletterForm';
 
+/**
+ * Shared organizer UI primitives.
+ *
+ * The design-system primitives (PageHeader, Breadcrumb, StatCard, StatusPill,
+ * DataTable, CardTitle/CardDescription, DsIcon, inputClass) live in
+ * `./design-system` and are re-exported here so existing imports from
+ * `@/components/ui` keep working unchanged.
+ */
+export {
+  inputClass,
+  PageHeader,
+  Breadcrumb,
+  StatCard,
+  StatusPill,
+  DataTable,
+  CardTitle,
+  CardDescription,
+  DsIcon,
+  emojiIcon,
+} from './design-system';
+export type { DataTableColumn, DataTableProps, DsIconName } from './design-system';
+export { default as EmptyState } from './EmptyState';
+
 export function Container({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`mx-auto w-full max-w-5xl px-4 sm:px-6 ${className}`}>{children}</div>;
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+/** Card accepts an optional `id` (anchor targets like `#post`) — additive, no design change. */
+export function Card({ children, className = '', id }: { children: ReactNode; className?: string; id?: string }) {
   return (
-    <div className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}>{children}</div>
-  );
-}
-
-export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
-  return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
-      </div>
-      {action}
+    <div
+      id={id}
+      className={`rounded-xl border border-[#EBEBEF] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.05)] ${className}`}
+    >
+      {children}
     </div>
   );
 }
@@ -88,9 +105,6 @@ export function Field({
     </label>
   );
 }
-
-export const inputClass =
-  'w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100';
 
 export function ErrorNote({ message }: { message: string | null }) {
   if (!message) return null;
@@ -226,27 +240,6 @@ export function BrandFooter({
         </div>
       </Container>
     </footer>
-  );
-}
-
-export function Breadcrumb({ items }: { items: { label: string; href?: string }[] }) {
-  return (
-    <nav aria-label="Breadcrumb" className="mb-4">
-      <ol className="flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
-        {items.map((item, i) => (
-          <li key={i} className="flex items-center gap-1.5">
-            {i > 0 && <span className="text-slate-300">›</span>}
-            {item.href ? (
-              <a href={item.href} className="transition hover:text-indigo-600 hover:underline">
-                {item.label}
-              </a>
-            ) : (
-              <span className="font-medium text-slate-500">{item.label}</span>
-            )}
-          </li>
-        ))}
-      </ol>
-    </nav>
   );
 }
 

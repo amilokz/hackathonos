@@ -20,9 +20,9 @@ export default function OrganizerShell({
   children: ReactNode;
 }) {
   return (
-    <div className={`min-h-screen ${dark ? 'bg-slate-950' : 'bg-slate-50'}`}>
+    <div className={`min-h-screen ${dark ? 'bg-slate-950' : 'bg-canvas'}`}>
       <OrganizerShellNav name={organizer.name} email={organizer.email} active={active} eventContext={eventContext} />
-      <div className="lg:pl-64">
+      <div className="lg:pl-[260px]">
         <main className="min-w-0">{children}</main>
       </div>
     </div>

@@ -2,9 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * HackathonOS design tokens (see src/components/design-system.tsx):
+ * - Page bg #F8F9FC · Card: white, rounded-xl, #EBEBEF hairline border,
+ *   shadow 0 1px 2px rgba(16,24,40,.05)
+ * - Primary #4F46F5 (indigo-600) · Success #0AB39C · Danger #EF4444 · Warning #F59E0B
+ * - Ink #111827 · Muted gray #6B7280
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
+  --background: #F8F9FC;
+  --foreground: #111827;
+  --ds-canvas: #F8F9FC;
+  --ds-line: #EBEBEF;
+  --ds-ink: #111827;
+  --ds-muted: #6B7280;
+  --ds-primary: #4F46F5;
+  --ds-success: #0AB39C;
+  --ds-danger: #EF4444;
+  --ds-warning: #F59E0B;
+  --ds-card-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
 }
 
 html {
@@ -14,8 +30,8 @@ html {
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
