@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import { getDb, migrate } from '@/lib/db';
+import { registrationConfirmation, sendEmail } from '@/lib/email';
 
 const CreateTeamSchema = z.object({
   eventId: z.string().trim().min(1),
@@ -28,8 +29,8 @@ export async function POST(req: NextRequest) {
 
   await migrate();
   const db = getDb();
-  const event = await db.prepare('SELECT id, status, require_team_approval FROM events WHERE id = ?').get(data.eventId) as
-    | { id: string; status: string; require_team_approval: number | null }
+  const event = await db.prepare('SELECT id, name, status, require_team_approval FROM events WHERE id = ?').get(data.eventId) as
+    | { id: string; name: string; status: string; require_team_approval: number | null }
     | undefined;
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
   if (event.status !== 'published') {
@@ -63,6 +64,16 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'A team with this name already registered for the event' }, { status: 409 });
   }
+
+  // Fire-and-forget registration confirmation email — never blocks registration.
+  (async () => {
+    try {
+      const { subject, html } = registrationConfirmation(event.name, data.name);
+      await sendEmail({ eventId: data.eventId, to: data.contact_email, subject, html, type: 'registration' });
+    } catch (e) {
+      console.error('[email] registration confirmation failed:', e);
+    }
+  })();
 
   return NextResponse.json({ ok: true, id, approval_status }, { status: 201 });
 }

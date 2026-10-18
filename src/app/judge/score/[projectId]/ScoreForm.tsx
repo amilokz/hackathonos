@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, Card, Button, Field, inputClass, ErrorNote, SuccessNote, Breadcrumb } from '@/components/ui';
+import AIFeedbackButton from '@/components/AIFeedbackButton';
 import type { CriterionInfo, ExistingScore } from './page';
 
 interface ProjectInfo {
@@ -163,6 +164,10 @@ export default function ScoreForm({
             )}
           </div>
         </Card>
+
+        <div className="mb-6">
+          <AIFeedbackButton projectId={project.id} />
+        </div>
 
         {criteria.length === 0 ? (
           <Card className="p-8 text-center">

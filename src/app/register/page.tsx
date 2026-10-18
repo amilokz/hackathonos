@@ -9,6 +9,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -24,7 +25,7 @@ export default function RegisterPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, invite_code: inviteCode }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -55,6 +56,9 @@ export default function RegisterPage() {
           </Field>
           <Field label="Password" hint="Minimum 8 characters.">
             <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} placeholder="••••••••" autoComplete="new-password" />
+          </Field>
+          <Field label="Invite code" hint="Organizer accounts are invite-only. Ask your administrator for a code.">
+            <input value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} className={inputClass} placeholder="ORG-XXXXXXXX" autoComplete="off" />
           </Field>
           <Button type="submit" disabled={busy} className="w-full">
             {busy ? 'Creating account…' : 'Create account'}

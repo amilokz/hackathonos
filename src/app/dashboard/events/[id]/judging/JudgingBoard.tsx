@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Card, Button, Field, inputClass, ErrorNote } from '@/components/ui';
+import AIFeedbackButton from '@/components/AIFeedbackButton';
 
 interface Criterion {
   id: string;
@@ -276,6 +277,9 @@ export default function JudgingBoard({
               </div>
             )}
           </div>
+
+          {/* AI project feedback assistant (cached server-side) */}
+          <AIFeedbackButton key={project.id} projectId={project.id} />
 
           {/* Human scoring form */}
           <Card className="p-5 sm:p-6">

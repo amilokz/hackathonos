@@ -89,6 +89,17 @@ const DDL = `
       created_at TEXT NOT NULL
     );
 
+    -- Invite-only organizer registration (production security).
+    -- New organizers must provide a valid unused invite code.
+    CREATE TABLE IF NOT EXISTS organizer_invites (
+      code TEXT PRIMARY KEY,
+      created_by TEXT NOT NULL,
+      used_by TEXT,
+      created_at TEXT NOT NULL,
+      used_at TEXT,
+      FOREIGN KEY (created_by) REFERENCES organizers(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS events (
       id TEXT PRIMARY KEY,
       organizer_id TEXT NOT NULL,
@@ -162,6 +173,14 @@ const DDL = `
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS ai_feedback (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL UNIQUE,
+      feedback_json TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS certificates (
       id TEXT PRIMARY KEY,
       event_id TEXT NOT NULL,
@@ -188,6 +207,7 @@ const DDL = `
     CREATE INDEX IF NOT EXISTS idx_criteria_event ON criteria(event_id);
     CREATE INDEX IF NOT EXISTS idx_scores_project ON scores(project_id);
     CREATE INDEX IF NOT EXISTS idx_ai_scores_project ON ai_scores(project_id);
+    CREATE INDEX IF NOT EXISTS idx_ai_feedback_project ON ai_feedback(project_id);
     CREATE INDEX IF NOT EXISTS idx_certificates_event ON certificates(event_id);
     CREATE INDEX IF NOT EXISTS idx_sponsors_event ON sponsors(event_id);
 
@@ -257,6 +277,22 @@ const DDL = `
       UNIQUE (team_id, participant_id)
     );
 
+    -- Email notifications (Resend). status is one of: sent, skipped_no_key,
+    -- failed: <message>. type is one of: registration, deadline, winner, broadcast.
+    CREATE TABLE IF NOT EXISTS email_log (
+      id TEXT PRIMARY KEY,
+      event_id TEXT NOT NULL,
+      to_email TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      type TEXT NOT NULL,
+      sent_at TEXT NOT NULL,
+      status TEXT NOT NULL,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_email_log_event ON email_log(event_id);
+    CREATE INDEX IF NOT EXISTS idx_email_log_event_type ON email_log(event_id, type);
+
     CREATE TABLE IF NOT EXISTS participants (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -271,6 +307,39 @@ const DDL = `
     CREATE INDEX IF NOT EXISTS idx_team_members_participant ON team_members(participant_id);
     CREATE INDEX IF NOT EXISTS idx_join_requests_team ON join_requests(team_id);
     CREATE INDEX IF NOT EXISTS idx_join_requests_participant ON join_requests(participant_id);
+
+    -- Mentor Booking: mentors with availability slots that teams can book.
+    CREATE TABLE IF NOT EXISTS mentors (
+      id TEXT PRIMARY KEY,
+      event_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      expertise TEXT DEFAULT '',
+      bio TEXT DEFAULT '',
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS mentor_slots (
+      id TEXT PRIMARY KEY,
+      mentor_id TEXT NOT NULL,
+      start_time TEXT NOT NULL,
+      end_time TEXT NOT NULL,
+      is_booked INTEGER DEFAULT 0,
+      FOREIGN KEY (mentor_id) REFERENCES mentors(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS mentor_bookings (
+      id TEXT PRIMARY KEY,
+      slot_id TEXT NOT NULL UNIQUE,
+      team_id TEXT NOT NULL,
+      booked_at TEXT NOT NULL,
+      FOREIGN KEY (slot_id) REFERENCES mentor_slots(id) ON DELETE CASCADE,
+      FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_mentors_event ON mentors(event_id);
+    CREATE INDEX IF NOT EXISTS idx_mentor_slots_mentor ON mentor_slots(mentor_id);
+    CREATE INDEX IF NOT EXISTS idx_mentor_bookings_team ON mentor_bookings(team_id);
 `;
 
 /**

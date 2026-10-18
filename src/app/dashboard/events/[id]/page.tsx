@@ -12,7 +12,9 @@ import QuickActions from '@/components/QuickActions';
 import PendingApprovals from '@/components/PendingApprovals';
 import TeamsTable from '@/components/TeamsTable';
 import JudgesSection from '@/components/JudgesSection';
+import MentorsSection from '@/components/MentorsSection';
 import AnnouncementsForm from '@/components/AnnouncementsForm';
+import EmailsSection from '@/components/EmailsSection';
 import type { EventRow } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -98,6 +100,7 @@ export default async function ManageEventPage({ params }: { params: { id: string
     { href: `/dashboard/events/${id}/judging`, label: '⚖️ Projects & judging', desc: 'Score projects & see AI pre-scores' },
     { href: `/dashboard/events/${id}/checkin`, label: '✅ Check-in', desc: 'On-site QR team check-in' },
     { href: `/dashboard/events/${id}/announcements`, label: '📢 Announcements', desc: 'Broadcast messages, deadlines & winners' },
+    { href: '#emails', label: '✉️ Emails', desc: 'Email broadcasts, deadline reminders & log' },
     { href: `/dashboard/events/${id}/analytics`, label: '📊 Analytics', desc: 'Mission Control live stats' },
   ];
 
@@ -219,6 +222,10 @@ export default async function ManageEventPage({ params }: { params: { id: string
               <JudgesSection eventId={event.id} />
             </div>
 
+            <div id="mentors" className="scroll-mt-24">
+              <MentorsSection eventId={event.id} />
+            </div>
+
             <section id="teams" className="scroll-mt-24">
               <Card className="p-5 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -259,6 +266,10 @@ export default async function ManageEventPage({ params }: { params: { id: string
               ) : (
                 <AnnouncementsForm eventId={event.id} />
               )}
+            </section>
+
+            <section id="emails" className="scroll-mt-24">
+              <EmailsSection eventId={event.id} />
             </section>
 
             <Card className="p-5">
