@@ -32,8 +32,8 @@ function pad(n: number) {
 
 function CountdownUnit({ value, label }: { value: string; label: string }) {
   return (
-    <div className="flex flex-col items-center">
-      <div className="rounded-2xl bg-slate-800/80 px-3 py-2 text-4xl font-black tabular-nums text-white shadow-lg ring-1 ring-slate-700 md:px-5 md:text-6xl">
+    <div className="flex min-w-0 flex-col items-center">
+      <div className="rounded-2xl bg-slate-800/80 px-2 py-1.5 text-3xl font-black tabular-nums text-white shadow-lg ring-1 ring-slate-700 md:px-3 md:text-4xl lg:px-4 lg:text-5xl">
         {value}
       </div>
       <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 md:text-xs">
@@ -188,8 +188,8 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
       ))}
 
       {/* ── Countdown + stat tiles ─────────────────────────── */}
-      <section className="grid shrink-0 grid-cols-1 gap-4 px-4 pt-4 md:grid-cols-12 md:px-8">
-        <div className="rounded-3xl bg-slate-900/70 p-4 ring-1 ring-slate-800 md:col-span-5 md:p-6">
+      <section className="grid shrink-0 grid-cols-1 gap-4 px-4 pt-4 md:px-8 lg:grid-cols-12">
+        <div className="min-w-0 overflow-hidden rounded-3xl bg-slate-900/70 p-4 ring-1 ring-slate-800 md:p-6 lg:col-span-5">
           <div className="mb-3 text-center text-xs font-bold uppercase tracking-widest text-slate-400 md:text-sm">
             {validDeadline ? 'Submissions close in' : 'Countdown'}
           </div>
@@ -199,13 +199,13 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
                 Submissions closed
               </div>
             ) : (
-              <div className="flex items-start justify-center gap-2 md:gap-4">
+              <div className="flex items-start justify-center gap-1 md:gap-2">
                 <CountdownUnit value={pad(dd)} label="days" />
-                <span className="pt-2 text-4xl font-black text-slate-600 md:pt-4 md:text-6xl">:</span>
+                <span className="pt-1 text-2xl font-black text-slate-600 md:pt-2 md:text-4xl">:</span>
                 <CountdownUnit value={pad(hh)} label="hrs" />
-                <span className="pt-2 text-4xl font-black text-slate-600 md:pt-4 md:text-6xl">:</span>
+                <span className="pt-1 text-2xl font-black text-slate-600 md:pt-2 md:text-4xl">:</span>
                 <CountdownUnit value={pad(mm)} label="min" />
-                <span className="pt-2 text-4xl font-black text-slate-600 md:pt-4 md:text-6xl">:</span>
+                <span className="pt-1 text-2xl font-black text-slate-600 md:pt-2 md:text-4xl">:</span>
                 <CountdownUnit value={pad(ss)} label="sec" />
               </div>
             )
@@ -215,7 +215,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
             </div>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-3 md:col-span-7 md:gap-4">
+        <div className="grid min-w-0 grid-cols-2 gap-3 md:gap-4 lg:col-span-7">
           <StatTile
             icon="👥"
             label="Registered teams"
