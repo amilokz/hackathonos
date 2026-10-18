@@ -72,8 +72,18 @@ export async function getParticipantFromToken(token: string): Promise<Participan
   if (!participantId) return null;
   const row = (await getDb()
     .prepare('SELECT id, name, email, skills, bio, created_at FROM participants WHERE id = ?')
-    .get(participantId)) as Participant | undefined;
-  return row ?? null;
+    .get(participantId)) as Record<string, unknown> | undefined;
+  if (!row) return null;
+  // Serialize to a plain object: @libsql rows are class instances and React
+  // warns when those are passed to Client Components.
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    email: String(row.email),
+    skills: String(row.skills ?? ''),
+    bio: String(row.bio ?? ''),
+    created_at: String(row.created_at),
+  };
 }
 
 function readTokenFromHeader(req: Request): string | null {

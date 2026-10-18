@@ -48,38 +48,15 @@ export function matchesSkills(lookingFor: string | null | undefined, skills: str
   return skills.some((s) => s.length >= 2 && (text.includes(s) || s.includes(text.trim())));
 }
 
-/** Counts roster rows in team_members for a team. */
-export async function countTeamMembersRows(teamId: string): Promise<number> {
-  const db = getDb();
-  const row = (await db
-    .prepare('SELECT COUNT(*) AS c FROM team_members WHERE team_id = ?')
-    .get(teamId)) as { c: number };
-  return row.c;
-}
-
-/** Counts distinct names stored in the legacy members_json column. */
-export async function countLegacyMembers(teamId: string): Promise<number> {
-  const db = getDb();
-  const row = (await db.prepare('SELECT members_json FROM teams WHERE id = ?').get(teamId)) as
-    | { members_json: string | null }
-    | undefined;
-  if (!row?.members_json) return 0;
-  try {
-    const parsed = JSON.parse(row.members_json) as unknown;
-    if (!Array.isArray(parsed)) return 0;
-    return new Set(parsed.map((m) => String(m).trim().toLowerCase()).filter(Boolean)).size;
-  } catch {
-    return 0;
-  }
-}
-
 /**
  * Total headcount for a team: structured team_members rows plus legacy
- * members_json names. Used for the join cap.
+ * members_json names that aren't already rostered (dedupe by name, so a
+ * participant who claimed their legacy entry via /api/participants/link is
+ * not counted twice). Used for the join cap.
  */
 export async function teamHeadcount(teamId: string): Promise<number> {
-  const [rows, legacy] = await Promise.all([countTeamMembersRows(teamId), countLegacyMembers(teamId)]);
-  return rows + legacy;
+  const [structured, legacy] = await Promise.all([getTeamMembers(teamId), getLegacyMemberNames(teamId)]);
+  return structured.length + legacy.length;
 }
 
 export interface TeamMemberRow {

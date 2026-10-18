@@ -1,6 +1,8 @@
 import { redirect, notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
+import OrganizerShell from '@/components/OrganizerShell';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 
 export const dynamic = 'force-dynamic';
 
@@ -158,23 +160,24 @@ export default async function AnalyticsPage({ params }: { params: { id: string }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* header */}
-      <header className="border-b border-slate-800">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 sm:px-6">
-          <div className="flex items-center gap-3">
-            <a href={`/dashboard/events/${eventId}`} className="text-sm font-semibold text-slate-400 hover:text-white">← Manage</a>
-            <h1 className="text-xl font-extrabold tracking-tight">
-              Mission Control <span className="text-slate-500">· {event.name}</span>
-            </h1>
-          </div>
+    <OrganizerShell organizer={org} active="events" dark>
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 text-slate-100">
+        {/* header */}
+        <Breadcrumbs
+          items={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: event.name, href: `/dashboard/events/${eventId}` },
+            { label: 'Analytics' },
+          ]}
+        />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-extrabold tracking-tight text-white">
+            Mission Control <span className="text-slate-500">· {event.name}</span>
+          </h1>
           <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-400">
             <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" /> LIVE
           </span>
         </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
         {/* stat tiles */}
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatTile label="Teams" value={teams} delta={teamsToday} />
@@ -331,7 +334,7 @@ export default async function AnalyticsPage({ params }: { params: { id: string }
             </div>
           )}
         </section>
-      </main>
-    </div>
+      </div>
+    </OrganizerShell>
   );
 }

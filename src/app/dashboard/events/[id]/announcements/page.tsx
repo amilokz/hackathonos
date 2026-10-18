@@ -2,8 +2,9 @@ import { redirect } from 'next/navigation';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
 import { getDb, migrate } from '@/lib/db';
 import { ensureAnnouncementColumns } from '@/lib/announcement-columns';
-import { Container, PageHeader, TopNav, LinkButton, Breadcrumb } from '@/components/ui';
-import LogoutButton from '../../../LogoutButton';
+import { Container, PageHeader, LinkButton } from '@/components/ui';
+import OrganizerShell from '@/components/OrganizerShell';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import AnnouncementsForm from '@/components/AnnouncementsForm';
 
 export const dynamic = 'force-dynamic';
@@ -24,10 +25,9 @@ export default async function EventAnnouncementsPage({ params }: { params: { id:
   ).c;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <TopNav title={organizer.name} right={<LogoutButton />} />
-      <Container className="max-w-3xl py-10">
-        <Breadcrumb
+    <OrganizerShell organizer={organizer} active="events">
+      <Container className="max-w-3xl py-8 sm:py-10">
+        <Breadcrumbs
           items={[
             { label: 'Dashboard', href: '/dashboard' },
             { label: event.name, href: `/dashboard/events/${params.id}` },
@@ -45,6 +45,6 @@ export default async function EventAnnouncementsPage({ params }: { params: { id:
         />
         <AnnouncementsForm eventId={params.id} />
       </Container>
-    </div>
+    </OrganizerShell>
   );
 }
