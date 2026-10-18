@@ -289,7 +289,11 @@ export default async function DashboardPage() {
   }
 
   return (
-    <OrganizerShell organizer={org} active="overview">
+    <OrganizerShell
+      organizer={org}
+      active="overview"
+      eventContext={events[0] ? { id: events[0].id, slug: events[0].slug } : null}
+    >
       <Container className="py-6 sm:py-8">
         <DashboardGreeting name={org.name} />
 
