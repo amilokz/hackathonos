@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { DsIcon } from '@/components/ui';
 
 /** "Request to join" button for a team card: POSTs a join request, handles 401/409 gracefully. */
 export default function RequestJoinButton({ teamId, teamName }: { teamId: string; teamName: string }) {
@@ -38,8 +39,9 @@ export default function RequestJoinButton({ teamId, teamName }: { teamId: string
 
   if (sent) {
     return (
-      <span className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-800">
-        ⏳ Request pending
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-800">
+        <DsIcon name="clock" className="h-3.5 w-3.5" />
+        Request pending
       </span>
     );
   }

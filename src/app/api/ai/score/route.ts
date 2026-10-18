@@ -4,7 +4,7 @@ import { getDb } from '@/lib/db';
 import { requireOrganizerFromRequest } from '@/lib/require-organizer';
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_MODEL = 'openai/gpt-oss-120b';
 
 const FALLBACK_CRITERIA = [
   { name: 'Innovation', weight: 25, description: 'How original and creative the idea is' },
