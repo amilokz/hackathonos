@@ -160,7 +160,7 @@ export default async function AnalyticsPage({ params }: { params: { id: string }
   };
 
   return (
-    <OrganizerShell organizer={org} active="events" dark>
+    <OrganizerShell organizer={org} active="analytics" eventContext={{ id: event.id, slug: event.slug }} dark>
       <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 text-slate-100">
         {/* header */}
         <Breadcrumbs

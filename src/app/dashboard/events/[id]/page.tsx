@@ -105,7 +105,7 @@ export default async function ManageEventPage({ params }: { params: { id: string
   ];
 
   return (
-    <OrganizerShell organizer={org} active="events">
+    <OrganizerShell organizer={org} active="events" eventContext={{ id: event.id, slug: event.slug }}>
       <Container className="py-8 sm:py-10">
         <Breadcrumbs
           items={[{ label: 'Dashboard', href: '/dashboard' }, { label: event.name }]}

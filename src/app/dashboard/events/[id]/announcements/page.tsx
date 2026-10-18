@@ -25,7 +25,7 @@ export default async function EventAnnouncementsPage({ params }: { params: { id:
   ).c;
 
   return (
-    <OrganizerShell organizer={organizer} active="events">
+    <OrganizerShell organizer={organizer} active="events" eventContext={{ id: event.id, slug: event.slug }}>
       <Container className="max-w-3xl py-8 sm:py-10">
         <Breadcrumbs
           items={[

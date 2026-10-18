@@ -24,7 +24,7 @@ export default async function CheckinPage({ params }: { params: { id: string } }
     .all(event.id)) as Array<{ id: string; name: string; checkin_code: string }>;
 
   return (
-    <OrganizerShell organizer={org} active="events">
+    <OrganizerShell organizer={org} active="events" eventContext={{ id: event.id, slug: event.slug }}>
       <Container className="py-8 sm:py-10">
         <Breadcrumbs
           items={[
