@@ -14,6 +14,8 @@ import path from 'node:path';
  */
 function resolveUrl(): string {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  // Vercel's native Turso integration sets TURSO_DATABASE_URL
+  if (process.env.TURSO_DATABASE_URL) return process.env.TURSO_DATABASE_URL;
   if (process.env.VERCEL) return 'file:/tmp/hackathonos.db';
   const dataDir = path.join(process.cwd(), 'data');
   if (!fs.existsSync(dataDir)) {
