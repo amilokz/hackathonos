@@ -1,29 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import { getDb, migrate } from '@/lib/db';
+import { ensureCertificateColumns } from '@/lib/certificate-columns';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
 import { requireOrganizerFromRequest, getOwnedEvent } from '@/lib/require-organizer';
+import { uniqueCertificateCode } from '@/lib/certificate-codes';
 
 export const dynamic = 'force-dynamic';
 
 const CERT_TYPES = ['participant', 'winner', 'judge', 'sponsor'] as const;
 
-function shortCode(): string {
-  return randomUUID().replace(/-/g, '').slice(0, 10).toUpperCase();
-}
-
-async function uniqueCode(db: ReturnType<typeof getDb>): Promise<string> {
-  for (let i = 0; i < 20; i++) {
-    const code = shortCode();
-    const hit = await db.prepare('SELECT 1 FROM certificates WHERE verification_code = ?').get(code);
-    if (!hit) return code;
-  }
-  // Extremely unlikely fallback: longer code.
-  return randomUUID().replace(/-/g, '').slice(0, 16).toUpperCase();
-}
-
 /** GET /api/events/[id]/certificates — list certificates for an event (organizer only). */
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   await migrate();
+  await ensureCertificateColumns();
   const organizer = await requireOrganizerFromRequest(req);
   if (!organizer) return Response.json({ error: 'Not signed in' }, { status: 401 });
   const event = await getOwnedEvent(params.id, organizer.id);
@@ -32,7 +21,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const db = getDb();
   const rows = await db
     .prepare(
-      'SELECT id, recipient_name, recipient_email, type, verification_code, created_at FROM certificates WHERE event_id = ? ORDER BY created_at DESC',
+      `SELECT c.id, c.recipient_name, c.recipient_email, c.type, c.verification_code,
+              c.pdf_url, c.template_id, c.created_at, t.name AS template_name
+       FROM certificates c
+       LEFT JOIN certificate_templates t ON t.id = c.template_id
+       WHERE c.event_id = ? ORDER BY c.created_at DESC`,
     )
     .all(params.id);
   return Response.json({ certificates: rows });
@@ -49,6 +42,7 @@ interface CertBody {
 /** POST /api/events/[id]/certificates — generate certificates (organizer only). */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   await migrate();
+  await ensureCertificateColumns();
   await ensureSettingsColumns();
   const organizer = await requireOrganizerFromRequest(req);
   if (!organizer) return Response.json({ error: 'Not signed in' }, { status: 401 });
@@ -102,7 +96,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const now = new Date().toISOString();
   const created: { name: string; email: string; code: string }[] = [];
   for (const e of entries) {
-    const code = await uniqueCode(db);
+    const code = await uniqueCertificateCode(db);
     created.push({ name: e.name, email: e.email, code });
   }
   await db.batch(

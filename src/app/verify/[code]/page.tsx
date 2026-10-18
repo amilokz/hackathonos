@@ -1,19 +1,22 @@
 import { notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
+import { ensureCertificateColumns } from '@/lib/certificate-columns';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
 import { formatLongDate } from '@/lib/format';
+import { DsIcon } from '@/components/design-system';
 
 export const dynamic = 'force-dynamic';
 
 export default async function VerifyPage({ params }: { params: { code: string } }) {
   await migrate();
   await ensureSettingsColumns();
+  await ensureCertificateColumns();
   const code = params.code.trim().toUpperCase();
 
   const db = getDb();
   const cert = await db
     .prepare(
-      `SELECT c.recipient_name, c.type, c.created_at, c.verification_code,
+      `SELECT c.recipient_name, c.type, c.created_at, c.verification_code, c.pdf_url,
               e.name AS event_name, o.name AS organizer_name,
               e.white_label, e.custom_footer_text
        FROM certificates c
@@ -27,6 +30,7 @@ export default async function VerifyPage({ params }: { params: { code: string } 
         type: string;
         created_at: string;
         verification_code: string;
+        pdf_url: string | null;
         event_name: string;
         organizer_name: string;
         white_label: number | null;
@@ -72,6 +76,16 @@ export default async function VerifyPage({ params }: { params: { code: string } 
               </div>
             </dl>
             <p className="mt-6 font-mono text-xs text-slate-400">{cert.verification_code}</p>
+            {cert.pdf_url ? (
+              <a
+                href={cert.pdf_url}
+                download={`certificate-${cert.verification_code}.pdf`}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+              >
+                <DsIcon name="download" className="h-4 w-4" />
+                Download PDF
+              </a>
+            ) : null}
           </>
         ) : null}
         {cert.white_label && cert.custom_footer_text?.trim() ? (
