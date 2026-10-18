@@ -11,15 +11,15 @@ function genCode(): string {
 
 // GET: list my invite codes. POST: generate a new one. (organizer only)
 export async function GET(req: NextRequest) {
-  const auth = await requireOrganizerFromRequest(req);
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const org = await requireOrganizerFromRequest(req);
+  if (!org) return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
   await migrate();
   const db = getDb();
   const codes = (await db
     .prepare(
       'SELECT code, used_by, created_at, used_at FROM organizer_invites WHERE created_by = ? ORDER BY created_at DESC'
     )
-    .all(auth.organizerId)) as Array<{
+    .all(org.id)) as Array<{
     code: string;
     used_by: string | null;
     created_at: string;
@@ -29,14 +29,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireOrganizerFromRequest(req);
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const org = await requireOrganizerFromRequest(req);
+  if (!org) return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
   await migrate();
   const db = getDb();
   const code = genCode();
   const now = new Date().toISOString();
   await db
     .prepare('INSERT INTO organizer_invites (code, created_by, created_at) VALUES (?, ?, ?)')
-    .run(code, auth.organizerId, now);
+    .run(code, org.id, now);
   return NextResponse.json({ code }, { status: 201 });
 }
