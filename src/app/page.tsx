@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getDb, migrate } from "@/lib/db";
+import { BrandFooter } from "@/components/ui";
 
 export const metadata: Metadata = {
   title: "HackathonOS — Run Hackathons End to End",
@@ -518,20 +519,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 sm:flex-row sm:px-6">
-          <p className="text-xl font-extrabold tracking-tight">
-            Hackathon<span className="text-indigo-600">OS</span>
-          </p>
-          <p className="text-sm text-slate-500">
-            The free operating system for hackathons · Built by{" "}
-            <a href="https://akclnt.com" className="font-semibold text-indigo-600 hover:underline">
-              AKCLNT
-            </a>
-          </p>
-        </div>
-      </footer>
+      <BrandFooter />
     </main>
   );
 }
