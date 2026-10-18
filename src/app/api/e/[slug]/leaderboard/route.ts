@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
-import { computeResults } from '@/app/api/events/[id]/results/route';
+import { computeResults } from '@/lib/results';
 
 /**
  * PUBLIC leaderboard data for an event (no auth).

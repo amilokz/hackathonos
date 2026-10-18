@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
-import { computeResults } from '@/app/api/events/[id]/results/route';
+import { computeResults } from '@/lib/results';
 import { Container, Card, LinkButton, BrandFooter } from '@/components/ui';
 import { toYouTubeEmbed } from '@/lib/youtube';
 import { formatDate, formatEntryFee } from '@/lib/format';
@@ -49,7 +49,7 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
     .prepare("SELECT * FROM sponsors WHERE event_id = ? ORDER BY CASE tier WHEN 'platinum' THEN 0 WHEN 'gold' THEN 1 WHEN 'silver' THEN 2 ELSE 3 END")
     .all(event.id) as SponsorRow[];
 
-  const teams = (await db.prepare('SELECT COUNT(*) AS c FROM teams WHERE event_id = ?').get(event.id) as { c: number }).c;
+  const teams = (await db.prepare("SELECT COUNT(*) AS c FROM teams WHERE event_id = ? AND approval_status = 'approved'").get(event.id) as { c: number }).c;
 
   const dates = [formatDate(event.start_date), formatDate(event.end_date)].filter(Boolean).join(' → ');
   const cover = event.cover_url?.trim() ? event.cover_url : null;

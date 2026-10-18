@@ -23,7 +23,7 @@ async function getPastEvents() {
   const db = getDb();
   return (await db
     .prepare(
-      `SELECT e.*, (SELECT COUNT(*) FROM teams t WHERE t.event_id = e.id) AS team_count
+      `SELECT e.*, (SELECT COUNT(*) FROM teams t WHERE t.event_id = e.id AND t.approval_status = 'approved') AS team_count
        FROM events e WHERE e.status = 'closed'
        ORDER BY e.end_date DESC, e.created_at DESC LIMIT 3`
     )
@@ -44,7 +44,7 @@ async function getLiveEvents() {
   return (await db
     .prepare(
       `SELECT e.id, e.name, e.slug, e.cover_url, e.description, e.start_date, e.end_date,
-              (SELECT COUNT(*) FROM teams t WHERE t.event_id = e.id) AS team_count
+              (SELECT COUNT(*) FROM teams t WHERE t.event_id = e.id AND t.approval_status = 'approved') AS team_count
        FROM events e WHERE e.status = 'published'
        ORDER BY e.start_date ASC, e.created_at DESC`
     )

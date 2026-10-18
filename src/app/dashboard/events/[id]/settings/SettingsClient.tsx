@@ -8,6 +8,7 @@ interface Settings {
   payment_instructions: string;
   white_label: boolean;
   custom_footer_text: string;
+  require_team_approval: boolean;
 }
 
 export default function SettingsClient({ eventId }: { eventId: string }) {
@@ -16,6 +17,7 @@ export default function SettingsClient({ eventId }: { eventId: string }) {
     payment_instructions: '',
     white_label: false,
     custom_footer_text: '',
+    require_team_approval: false,
   });
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -115,6 +117,23 @@ export default function SettingsClient({ eventId }: { eventId: string }) {
             </Field>
           </div>
         )}
+      </Card>
+
+      <Card className="p-6 sm:p-8">
+        <h2 className="text-lg font-bold text-slate-900">Team approvals</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          When enabled, new teams land in a pending queue and stay invisible on the public
+          page, leaderboard and judging until you approve them.
+        </p>
+        <label className="mt-4 flex cursor-pointer items-center gap-3">
+          <input
+            type="checkbox"
+            checked={settings.require_team_approval}
+            onChange={(e) => setSettings({ ...settings, require_team_approval: e.target.checked })}
+            className="h-5 w-5 rounded accent-indigo-600"
+          />
+          <span className="text-sm font-medium text-slate-700">Require organizer approval for new teams</span>
+        </label>
       </Card>
 
       <ErrorNote message={error || null} />

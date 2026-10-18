@@ -3,7 +3,7 @@ import { getDb, migrate } from '@/lib/db';
 import { requireOrganizer } from '@/lib/require-organizer';
 import { Container, Card, PageHeader, LinkButton, TopNav } from '@/components/ui';
 import LogoutButton from './LogoutButton';
-import PublishToggle from '@/components/PublishToggle';
+import QuickActions from '@/components/QuickActions';
 import SeedDemoButton from './SeedDemoButton';
 import type { EventRow } from '@/lib/types';
 
@@ -15,6 +15,54 @@ const STATUS_STYLES: Record<string, string> = {
   closed: 'bg-amber-100 text-amber-700',
 };
 
+interface EventStats {
+  approvedTeams: number;
+  pendingTeams: number;
+  projects: number;
+  judgingPct: number;
+  judges: number;
+}
+
+async function getStats(eventId: string): Promise<EventStats> {
+  const db = getDb();
+  const approvedTeams = (await db
+    .prepare("SELECT COUNT(*) AS c FROM teams WHERE event_id = ? AND approval_status = 'approved'")
+    .get(eventId) as { c: number }).c;
+  const pendingTeams = (await db
+    .prepare("SELECT COUNT(*) AS c FROM teams WHERE event_id = ? AND approval_status = 'pending'")
+    .get(eventId) as { c: number }).c;
+  const projects = (await db
+    .prepare("SELECT COUNT(*) AS c FROM projects WHERE team_id IN (SELECT id FROM teams WHERE event_id = ? AND approval_status = 'approved')")
+    .get(eventId) as { c: number }).c;
+
+  const judgeRows = (await db
+    .prepare('SELECT COUNT(*) AS c FROM judges WHERE event_id = ?')
+    .get(eventId) as { c: number }).c;
+  const distinctScorers = (await db
+    .prepare(
+      `SELECT COUNT(DISTINCT s.judge_name) AS c FROM scores s
+       JOIN projects p ON p.id = s.project_id
+       JOIN teams t ON t.id = p.team_id
+       WHERE t.event_id = ? AND t.approval_status = 'approved'`,
+    )
+    .get(eventId) as { c: number }).c;
+  const judges = Math.max(judgeRows, distinctScorers);
+
+  const completed = (await db
+    .prepare(
+      `SELECT COUNT(*) AS c FROM (
+         SELECT DISTINCT s.project_id, s.judge_name FROM scores s
+         JOIN projects p ON p.id = s.project_id
+         JOIN teams t ON t.id = p.team_id
+         WHERE t.event_id = ? AND t.approval_status = 'approved'
+       )`,
+    )
+    .get(eventId) as { c: number }).c;
+  const judgingPct = projects > 0 && judges > 0 ? Math.round((completed / (projects * judges)) * 100) : 0;
+
+  return { approvedTeams, pendingTeams, projects, judgingPct, judges };
+}
+
 export default async function DashboardPage() {
   const org = await requireOrganizer();
   if (!org) redirect('/login');
@@ -25,11 +73,9 @@ export default async function DashboardPage() {
     .prepare('SELECT * FROM events WHERE organizer_id = ? ORDER BY created_at DESC')
     .all(org.id) as EventRow[];
 
-  const counts = new Map<string, { teams: number; projects: number }>();
+  const stats = new Map<string, EventStats>();
   for (const e of events) {
-    const teams = (await db.prepare('SELECT COUNT(*) AS c FROM teams WHERE event_id = ?').get(e.id) as { c: number }).c;
-    const projects = (await db.prepare('SELECT COUNT(*) AS c FROM projects WHERE team_id IN (SELECT id FROM teams WHERE event_id = ?)').get(e.id) as { c: number }).c;
-    counts.set(e.id, { teams, projects });
+    stats.set(e.id, await getStats(e.id));
   }
 
   return (
@@ -56,35 +102,81 @@ export default async function DashboardPage() {
             <SeedDemoButton />
           </Card>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {events.map((e) => {
-              const c = counts.get(e.id) ?? { teams: 0, projects: 0 };
-              return (
-                <Card key={e.id} className="p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h2 className="font-bold text-slate-900">{e.name}</h2>
-                      <p className="mt-0.5 font-mono text-xs text-slate-400">/e/{e.slug}</p>
-                    </div>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${STATUS_STYLES[e.status] ?? STATUS_STYLES.draft}`}>
-                      {e.status}
-                    </span>
-                  </div>
-                  <div className="mt-3 flex gap-4 text-sm text-slate-500">
-                    <span><strong className="text-slate-900">{c.teams}</strong> teams</span>
-                    <span><strong className="text-slate-900">{c.projects}</strong> projects</span>
-                  </div>
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <LinkButton href={`/dashboard/events/${e.id}`} variant="secondary">Manage</LinkButton>
-                    <PublishToggle eventId={e.id} status={e.status} size="sm" />
-                    {e.status === 'published' || e.status === 'closed' ? (
-                      <LinkButton href={`/e/${e.slug}`} variant="secondary">View public page</LinkButton>
-                    ) : null}
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+          <Card className="overflow-x-auto p-0">
+            <table className="w-full min-w-[880px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                  <th className="px-5 py-3 font-semibold">Event</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold">Teams</th>
+                  <th className="px-4 py-3 font-semibold">Projects</th>
+                  <th className="px-4 py-3 font-semibold">Judging</th>
+                  <th className="px-5 py-3 text-right font-semibold">Quick actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.map((e) => {
+                  const s = stats.get(e.id) ?? { approvedTeams: 0, pendingTeams: 0, projects: 0, judgingPct: 0, judges: 0 };
+                  return (
+                    <tr key={e.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
+                      <td className="px-5 py-4">
+                        <a href={`/dashboard/events/${e.id}`} className="font-bold text-slate-900 hover:text-indigo-700">
+                          {e.name}
+                        </a>
+                        <p className="mt-0.5 font-mono text-xs text-slate-400">/e/{e.slug}</p>
+                        <div className="mt-1.5 flex gap-2">
+                          <a href={`/dashboard/events/${e.id}`} className="text-xs font-semibold text-indigo-600 hover:underline">
+                            Manage →
+                          </a>
+                          {(e.status === 'published' || e.status === 'closed') && (
+                            <a href={`/e/${e.slug}`} className="text-xs font-semibold text-slate-500 hover:underline">
+                              Public page
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${STATUS_STYLES[e.status] ?? STATUS_STYLES.draft}`}>
+                          {e.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className="font-bold text-slate-900">{s.approvedTeams}</span>
+                        {s.pendingTeams > 0 && (
+                          <a
+                            href={`/dashboard/events/${e.id}#teams`}
+                            className="ml-2 inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 hover:bg-amber-200"
+                            title="Teams awaiting approval"
+                          >
+                            {s.pendingTeams} pending
+                          </a>
+                        )}
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className="font-bold text-slate-900">{s.projects}</span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-200">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
+                              style={{ width: `${Math.min(100, s.judgingPct)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-semibold text-slate-600">{s.judgingPct}%</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex justify-end">
+                          <QuickActions eventId={e.id} status={e.status} slug={e.slug} eventName={e.name} />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Card>
         )}
       </Container>
     </div>

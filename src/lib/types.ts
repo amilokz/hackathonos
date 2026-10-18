@@ -26,6 +26,8 @@ export interface EventRow {
   payment_instructions?: string | null;
   white_label?: number | null;
   custom_footer_text?: string | null;
+  // Team-approval gating (added via migrate(); defaults to 0 on old rows).
+  require_team_approval?: number | null;
   created_at: string;
 }
 
@@ -37,6 +39,8 @@ export interface TeamRow {
   contact_email: string;
   contact_phone: string;
   members_json: string;
+  approval_status?: string;
+  checkin_code?: string;
   created_at: string;
 }
 

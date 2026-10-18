@@ -19,7 +19,7 @@ export default async function PastHackathonsPage() {
   const db = getDb();
   const events = (await db
     .prepare(
-      `SELECT e.*, (SELECT COUNT(*) FROM teams t WHERE t.event_id = e.id) AS team_count
+      `SELECT e.*, (SELECT COUNT(*) FROM teams t WHERE t.event_id = e.id AND t.approval_status = 'approved') AS team_count
        FROM events e WHERE e.status = 'closed' ORDER BY e.end_date DESC, e.created_at DESC`,
     )
     .all()) as ClosedEvent[];

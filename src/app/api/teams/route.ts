@@ -28,8 +28,8 @@ export async function POST(req: NextRequest) {
 
   await migrate();
   const db = getDb();
-  const event = await db.prepare('SELECT id, status FROM events WHERE id = ?').get(data.eventId) as
-    | { id: string; status: string }
+  const event = await db.prepare('SELECT id, status, require_team_approval FROM events WHERE id = ?').get(data.eventId) as
+    | { id: string; status: string; require_team_approval: number | null }
     | undefined;
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
   if (event.status !== 'published') {
@@ -54,14 +54,15 @@ export async function POST(req: NextRequest) {
   const id = uuid();
   const now = new Date().toISOString();
   const members = data.members.filter((m) => m.length > 0);
+  const approval_status = event.require_team_approval ? 'pending' : 'approved';
   try {
     await db.prepare(
-      `INSERT INTO teams (id, event_id, name, contact_name, contact_email, contact_phone, members_json, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(id, data.eventId, data.name, data.contact_name, data.contact_email, data.contact_phone, JSON.stringify(members), now);
+      `INSERT INTO teams (id, event_id, name, contact_name, contact_email, contact_phone, members_json, approval_status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(id, data.eventId, data.name, data.contact_name, data.contact_email, data.contact_phone, JSON.stringify(members), approval_status, now);
   } catch {
     return NextResponse.json({ error: 'A team with this name already registered for the event' }, { status: 409 });
   }
 
-  return NextResponse.json({ ok: true, id }, { status: 201 });
+  return NextResponse.json({ ok: true, id, approval_status }, { status: 201 });
 }

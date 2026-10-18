@@ -23,7 +23,7 @@ export default async function JudgingPage({ params }: { params: { id: string } }
     .prepare(
       `SELECT p.id, p.title, p.description, p.demo_url, p.repo_url, p.pitch_text, t.name AS team_name
        FROM projects p JOIN teams t ON t.id = p.team_id
-       WHERE t.event_id = ? ORDER BY p.created_at`
+       WHERE t.event_id = ? AND t.approval_status = 'approved' ORDER BY p.created_at`
     )
     .all(params.id);
 
@@ -33,7 +33,7 @@ export default async function JudgingPage({ params }: { params: { id: string } }
        FROM scores s
        JOIN projects p ON p.id = s.project_id
        JOIN teams t ON t.id = p.team_id
-       WHERE t.event_id = ?`
+       WHERE t.event_id = ? AND t.approval_status = 'approved'`
     )
     .all(params.id) as { project_id: string; judge_name: string; criteria_id: string; score: number; notes: string }[];
 
@@ -43,7 +43,7 @@ export default async function JudgingPage({ params }: { params: { id: string } }
        FROM ai_scores a
        JOIN projects p ON p.id = a.project_id
        JOIN teams t ON t.id = p.team_id
-       WHERE t.event_id = ?`
+       WHERE t.event_id = ? AND t.approval_status = 'approved'`
     )
     .all(params.id) as {
     project_id: string;

@@ -9,6 +9,7 @@ interface EventSettings {
   payment_instructions: string;
   white_label: boolean;
   custom_footer_text: string;
+  require_team_approval: boolean;
 }
 
 async function readSettings(eventId: string): Promise<EventSettings> {
@@ -16,19 +17,21 @@ async function readSettings(eventId: string): Promise<EventSettings> {
   const db = getDb();
   const row = await db
     .prepare(
-      'SELECT entry_fee, payment_instructions, white_label, custom_footer_text FROM events WHERE id = ?',
+      'SELECT entry_fee, payment_instructions, white_label, custom_footer_text, require_team_approval FROM events WHERE id = ?',
     )
     .get(eventId) as {
     entry_fee: number | null;
     payment_instructions: string | null;
     white_label: number | null;
     custom_footer_text: string | null;
+    require_team_approval: number | null;
   };
   return {
     entry_fee: Number(row?.entry_fee ?? 0),
     payment_instructions: row?.payment_instructions ?? '',
     white_label: Boolean(row?.white_label),
     custom_footer_text: row?.custom_footer_text ?? '',
+    require_team_approval: Boolean(row?.require_team_approval),
   };
 }
 
@@ -56,6 +59,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     payment_instructions?: string;
     white_label?: boolean;
     custom_footer_text?: string;
+    require_team_approval?: boolean;
   };
   try {
     body = await req.json();
@@ -86,6 +90,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (body.custom_footer_text !== undefined) {
     updates.push('custom_footer_text = ?');
     values.push(String(body.custom_footer_text));
+  }
+  if (body.require_team_approval !== undefined) {
+    updates.push('require_team_approval = ?');
+    values.push(body.require_team_approval ? 1 : 0);
   }
   if (updates.length > 0) {
     values.push(params.id);

@@ -82,3 +82,27 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const updated = await db.prepare('SELECT * FROM events WHERE id = ?').get(event.id);
   return NextResponse.json({ ok: true, event: updated });
 }
+
+/** Delete an event and everything under it (must own it). */
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const result = await owned(req, params.id);
+  if (result.error) return result.error;
+  const { event } = result;
+
+  const db = getDb();
+  // Explicit child deletes first (safe even where FK enforcement is off),
+  // then the event row itself.
+  await db.prepare('DELETE FROM scores WHERE project_id IN (SELECT p.id FROM projects p JOIN teams t ON t.id = p.team_id WHERE t.event_id = ?)').run(event.id);
+  await db.prepare('DELETE FROM ai_scores WHERE project_id IN (SELECT p.id FROM projects p JOIN teams t ON t.id = p.team_id WHERE t.event_id = ?)').run(event.id);
+  await db.prepare('DELETE FROM projects WHERE team_id IN (SELECT id FROM teams WHERE event_id = ?)').run(event.id);
+  await db.prepare('DELETE FROM checkins WHERE event_id = ?').run(event.id);
+  await db.prepare('DELETE FROM announcements WHERE event_id = ?').run(event.id);
+  await db.prepare('DELETE FROM certificates WHERE event_id = ?').run(event.id);
+  await db.prepare('DELETE FROM sponsors WHERE event_id = ?').run(event.id);
+  await db.prepare('DELETE FROM judges WHERE event_id = ?').run(event.id);
+  await db.prepare('DELETE FROM criteria WHERE event_id = ?').run(event.id);
+  await db.prepare('DELETE FROM teams WHERE event_id = ?').run(event.id);
+  await db.prepare('DELETE FROM events WHERE id = ?').run(event.id);
+
+  return NextResponse.json({ ok: true });
+}

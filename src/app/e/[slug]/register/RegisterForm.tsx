@@ -11,6 +11,7 @@ export default function RegisterForm({ eventId, eventSlug }: { eventId: string; 
   const [members, setMembers] = useState<string[]>(['']);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [pending, setPending] = useState(false);
   const [busy, setBusy] = useState(false);
 
   function setMember(i: number, value: string) {
@@ -45,6 +46,7 @@ export default function RegisterForm({ eventId, eventSlug }: { eventId: string; 
         setError(data.error || 'Registration failed');
         return;
       }
+      setPending(data.approval_status === 'pending');
       setDone(true);
     } catch {
       setError('Network error. Please try again.');
@@ -54,6 +56,23 @@ export default function RegisterForm({ eventId, eventSlug }: { eventId: string; 
   }
 
   if (done) {
+    if (pending) {
+      return (
+        <Card className="p-8 text-center">
+          <p className="text-3xl">⏳</p>
+          <h2 className="mt-2 text-xl font-bold text-slate-900">Your registration is pending organizer approval</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            <strong className="text-slate-700">{teamName}</strong> was received. We&apos;ll notify you
+            once the organizer approves your team.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <LinkButton href={`/e/${eventSlug}`} variant="secondary">
+              Back to event
+            </LinkButton>
+          </div>
+        </Card>
+      );
+    }
     return (
       <Card className="p-8 text-center">
         <p className="text-3xl">🎉</p>
