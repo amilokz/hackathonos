@@ -189,6 +189,13 @@ const DDL = `
     CREATE INDEX IF NOT EXISTS idx_ai_scores_project ON ai_scores(project_id);
     CREATE INDEX IF NOT EXISTS idx_certificates_event ON certificates(event_id);
     CREATE INDEX IF NOT EXISTS idx_sponsors_event ON sponsors(event_id);
+
+    CREATE TABLE IF NOT EXISTS uploads (
+      id TEXT PRIMARY KEY,
+      data_url TEXT NOT NULL,
+      mime TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
 `;
 
 /**

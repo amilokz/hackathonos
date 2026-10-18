@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button, Field, inputClass, ErrorNote } from '@/components/ui';
+import ImageUpload from '@/components/ImageUpload';
 
 export default function NewEventForm() {
   const router = useRouter();
@@ -64,8 +65,8 @@ export default function NewEventForm() {
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Logo URL (optional)">
-            <input value={form.logo_url} onChange={(e) => set('logo_url', e.target.value)} className={inputClass} placeholder="https://…" />
+          <Field label="Logo (optional)">
+            <ImageUpload value={form.logo_url} onChange={(url) => set('logo_url', url)} />
           </Field>
           <Field label="Entry fee (0 = free)" hint="In your local currency.">
             <input type="number" min={0} step="any" value={form.entry_fee} onChange={(e) => set('entry_fee', e.target.value)} className={inputClass} />

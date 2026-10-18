@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, Button, Field, inputClass, ErrorNote } from '@/components/ui';
+import ImageUpload from '@/components/ImageUpload';
 
 const TIERS = ['platinum', 'gold', 'silver'];
 
@@ -109,11 +110,10 @@ export default function SponsorsClient({ eventId }: { eventId: string }) {
               ))}
             </select>
           </Field>
-          <Field label="Logo URL">
-            <input
+          <Field label="Logo">
+            <ImageUpload
               value={form.logo_url}
-              onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-              className={inputClass}
+              onChange={(url) => setForm({ ...form, logo_url: url })}
               placeholder="https://…/logo.png"
             />
           </Field>

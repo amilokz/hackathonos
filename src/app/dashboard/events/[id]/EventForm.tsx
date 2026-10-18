@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button, Field, inputClass, ErrorNote, SuccessNote } from '@/components/ui';
+import ImageUpload from '@/components/ImageUpload';
 import type { EventRow } from '@/lib/types';
 
 export default function EventForm({ event }: { event: EventRow }) {
@@ -74,8 +75,8 @@ export default function EventForm({ event }: { event: EventRow }) {
           </Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Logo URL">
-            <input value={form.logo_url} onChange={(e) => set('logo_url', e.target.value)} className={inputClass} placeholder="https://…" />
+          <Field label="Logo">
+            <ImageUpload value={form.logo_url} onChange={(url) => set('logo_url', url)} />
           </Field>
           <Field label="Entry fee (0 = free)">
             <input type="number" min={0} step="any" value={form.entry_fee} onChange={(e) => set('entry_fee', e.target.value)} className={inputClass} />
