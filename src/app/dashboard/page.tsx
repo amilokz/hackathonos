@@ -282,6 +282,7 @@ export default async function DashboardPage() {
                     event={e}
                     teams={s.approvedTeams + s.pendingTeams}
                     projects={s.projects}
+                    pendingTeams={s.pendingTeams}
                   />
                 );
               })}
