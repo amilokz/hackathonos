@@ -292,8 +292,8 @@ function SidebarBody({
         New event
       </a>
 
-      {/* Grouped nav */}
-      <nav className="sidebar-scroll min-h-0 flex-1 space-y-6 overflow-y-auto pr-1" aria-label="Organizer navigation">
+      {/* Grouped nav — natural flow, no internal scroll; whole sidebar scrolls as one unit */}
+      <nav className="space-y-6" aria-label="Organizer navigation">
         {groups.map((g) => (
           <div key={g.title}>
             <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
@@ -421,7 +421,7 @@ export default function OrganizerShellNav({
         aria-hidden="true"
       />
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[19rem] max-w-[85vw] flex-col bg-slate-900 p-5 shadow-2xl transition-transform duration-300 ease-out lg:hidden ${
+        className={`sidebar-scroll fixed inset-y-0 left-0 z-50 flex w-[19rem] max-w-[85vw] flex-col overflow-y-auto bg-slate-900 p-5 shadow-2xl transition-transform duration-300 ease-out lg:hidden ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Organizer navigation"
@@ -437,25 +437,21 @@ export default function OrganizerShellNav({
             <Icon name="x" className="h-5 w-5" />
           </button>
         </div>
-        <div className="min-h-0 flex-1">
-          <SidebarBody
-            groups={groups}
-            active={active}
-            name={name}
-            email={email}
-            onNavigate={() => setOpen(false)}
-          />
-        </div>
+        <SidebarBody
+          groups={groups}
+          active={active}
+          name={name}
+          email={email}
+          onNavigate={() => setOpen(false)}
+        />
       </aside>
 
-      {/* Desktop sidebar — fixed 260px, dark navy #0F172A */}
+      {/* Desktop sidebar — fixed 260px, dark navy #0F172A; whole sidebar scrolls as one unit */}
       <aside
-        className="fixed inset-y-0 left-0 z-20 hidden w-[260px] shrink-0 flex-col bg-slate-900 p-5 pt-20 lg:flex"
+        className="sidebar-scroll fixed inset-y-0 left-0 z-20 hidden w-[260px] shrink-0 flex-col overflow-y-auto bg-slate-900 p-5 pt-20 lg:flex"
         aria-label="Organizer navigation"
       >
-        <div className="min-h-0 flex-1">
-          <SidebarBody groups={groups} active={active} name={name} email={email} />
-        </div>
+        <SidebarBody groups={groups} active={active} name={name} email={email} />
       </aside>
     </>
   );
