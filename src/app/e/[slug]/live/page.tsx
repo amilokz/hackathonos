@@ -112,6 +112,10 @@ export default async function LivePage({
         team_name: r.team_name,
         title: r.title,
         score: Math.round(r.human_total as number),
+        breakdown: r.criterion_averages.map((ca) => ({
+          criterion: ca.criterion,
+          average: ca.average,
+        })),
       }));
     }
   }

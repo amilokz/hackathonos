@@ -22,8 +22,15 @@ export interface LiveData {
     message: string;
     created_at: string;
   }[];
-  podium: { team_name: string; title: string; score: number }[] | null;
-  sponsors: { name: string; logo_url: string; tier: string }[];
+  podium:
+    | {
+        team_name: string;
+        title: string;
+        score: number;
+        /** Per-criterion average judge score (0-10) for the top-3 breakdown strip. */
+        breakdown: { criterion: string; average: number }[];
+      }[]
+    | null;  sponsors: { name: string; logo_url: string; tier: string }[];
 }
 
 function pad(n: number) {
@@ -306,6 +313,16 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
                       <div className="text-xs font-bold text-indigo-300 md:text-base">
                         {w.score} pts
                       </div>
+                      {w.breakdown.length > 0 && (
+                        <div
+                          className="mt-0.5 truncate text-[10px] tabular-nums text-slate-500 md:text-xs"
+                          title={w.breakdown
+                            .map((b) => `${b.criterion}: ${b.average.toFixed(1)} / 10`)
+                            .join(' · ')}
+                        >
+                          {w.breakdown.map((b) => Math.round(b.average * 10)).join(' · ')}
+                        </div>
+                      )}
                     </div>
                     <div
                       className={`flex w-full ${s.h} items-end justify-center rounded-t-2xl pb-3 ring-1 ${s.bar}`}
