@@ -303,9 +303,25 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
       ))}
 
       {/* ── Countdown + stat tiles ─────────────────────────── */}
-      <section className="grid shrink-0 grid-cols-1 gap-4 px-4 pt-4 md:gap-5 md:px-8 md:pt-5 lg:grid-cols-12">
-        <div className="min-w-0 rounded-3xl bg-slate-900/70 p-4 ring-1 ring-slate-800 md:p-6 lg:col-span-5">
-          <div className="mb-3 flex items-center justify-center gap-2 text-center text-xs font-bold uppercase tracking-[0.2em] text-slate-400 md:mb-4 md:text-sm">
+      {/* Full-width stacked rows (research spec): countdown hero gets its OWN
+          row, stats sit on the row below — no side-by-side columns, so the
+          countdown can never bleed into the stat tiles at any viewport width. */}
+      <section className="grid shrink-0 grid-cols-1 gap-4 px-4 pt-4 md:px-8 md:pt-5">
+        <style>{`
+          .hcc-cd-unit { flex: 1 1 0; min-width: 0; max-width: clamp(4.5rem, 11vw, 8.5rem); display: flex; justify-content: center; }
+          .hcc-cd-unit > div:first-child { flex-shrink: 1; min-width: 0; width: 100%; }
+          .hcc-cd-unit > div:first-child > div:first-child {
+            width: 100%; height: clamp(4.5rem, 12vw, 9rem);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; padding: 0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-weight: 800; font-variant-numeric: tabular-nums;
+            font-size: clamp(2.5rem, 7vw, 6rem); line-height: 1;
+          }
+          .hcc-stat > div > div > div:first-child { font-size: clamp(2.5rem, 4vw, 3rem); line-height: 1.05; }
+        `}</style>
+        <div className="min-w-0 rounded-3xl border border-slate-800 bg-slate-900/80 px-4 py-8 ring-1 ring-slate-800 md:px-8">
+          <div className="mb-4 flex items-center justify-center gap-2 text-center text-xs font-bold uppercase tracking-[0.2em] text-slate-400 md:mb-6 md:text-sm">
             <Icon name="alert-triangle" className="hidden h-4 w-4" />
             {validDeadline ? 'Submissions close in' : 'Countdown'}
           </div>
@@ -315,14 +331,28 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
                 Submissions closed
               </div>
             ) : (
-              <div className="flex items-start justify-center gap-1.5 md:gap-3">
-                <CountdownUnit value={pad(dd)} label="days" />
-                <span className="pt-2 text-2xl font-black text-slate-600 md:pt-3 md:text-4xl">:</span>
-                <CountdownUnit value={pad(hh)} label="hrs" />
-                <span className="pt-2 text-2xl font-black text-slate-600 md:pt-3 md:text-4xl">:</span>
-                <CountdownUnit value={pad(mm)} label="min" />
-                <span className="pt-2 text-2xl font-black text-slate-600 md:pt-3 md:text-4xl">:</span>
-                <CountdownUnit value={pad(ss)} label="sec" />
+              <div className="mx-auto flex w-full min-w-0 max-w-5xl items-start justify-center gap-1.5 overflow-hidden md:gap-3">
+                <div className="hcc-cd-unit">
+                  <CountdownUnit value={pad(dd)} label="days" />
+                </div>
+                <span className="flex h-[clamp(4.5rem,12vw,9rem)] shrink-0 items-center font-mono text-2xl font-black text-slate-600 md:text-4xl">
+                  :
+                </span>
+                <div className="hcc-cd-unit">
+                  <CountdownUnit value={pad(hh)} label="hrs" />
+                </div>
+                <span className="flex h-[clamp(4.5rem,12vw,9rem)] shrink-0 items-center font-mono text-2xl font-black text-slate-600 md:text-4xl">
+                  :
+                </span>
+                <div className="hcc-cd-unit">
+                  <CountdownUnit value={pad(mm)} label="min" />
+                </div>
+                <span className="flex h-[clamp(4.5rem,12vw,9rem)] shrink-0 items-center font-mono text-2xl font-black text-slate-600 md:text-4xl">
+                  :
+                </span>
+                <div className="hcc-cd-unit">
+                  <CountdownUnit value={pad(ss)} label="sec" />
+                </div>
               </div>
             )
           ) : (
@@ -331,31 +361,39 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
             </div>
           )}
         </div>
-        <div className="grid min-w-0 grid-cols-2 gap-3 md:gap-4 lg:col-span-7">
-          <StatTile
-            icon="users"
-            label="Registered teams"
-            value={String(data.teamsCount)}
-            accent="bg-indigo-500/20 text-indigo-300"
-          />
-          <StatTile
-            icon="rocket"
-            label="Projects submitted"
-            value={String(data.projectsCount)}
-            accent="bg-emerald-500/20 text-emerald-300"
-          />
-          <StatTile
-            icon="scale"
-            label="Judging progress"
-            value={`${data.judgingPct}%`}
-            accent="bg-amber-500/20 text-amber-300"
-          />
-          <StatTile
-            icon="badge-check"
-            label="Check-ins"
-            value={String(data.checkinsCount)}
-            accent="bg-sky-500/20 text-sky-300"
-          />
+        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="hcc-stat min-w-[220px]">
+            <StatTile
+              icon="users"
+              label="Registered teams"
+              value={String(data.teamsCount)}
+              accent="bg-indigo-500/20 text-indigo-300"
+            />
+          </div>
+          <div className="hcc-stat min-w-[220px]">
+            <StatTile
+              icon="rocket"
+              label="Projects submitted"
+              value={String(data.projectsCount)}
+              accent="bg-emerald-500/20 text-emerald-300"
+            />
+          </div>
+          <div className="hcc-stat min-w-[220px]">
+            <StatTile
+              icon="scale"
+              label="Judging progress"
+              value={`${data.judgingPct}%`}
+              accent="bg-amber-500/20 text-amber-300"
+            />
+          </div>
+          <div className="hcc-stat min-w-[220px]">
+            <StatTile
+              icon="badge-check"
+              label="Check-ins"
+              value={String(data.checkinsCount)}
+              accent="bg-sky-500/20 text-sky-300"
+            />
+          </div>
         </div>
       </section>
 
