@@ -293,17 +293,37 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
             <section>
               <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-slate-400">Sponsors</h2>
               <div className="mt-4 flex flex-wrap items-center justify-center gap-4">
-                {sponsors.map((s) => (
-                  <Card key={s.id} className="flex items-center gap-3 px-5 py-3">
-                    {s.logo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={s.logo_url} alt={s.name} className="h-8 w-auto object-contain" />
-                    ) : (
-                      <span className="font-bold text-slate-700">{s.name}</span>
-                    )}
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium capitalize text-slate-500">{s.tier}</span>
-                  </Card>
-                ))}
+                {sponsors.map((s) => {
+                  const card = (
+                    <Card
+                      className={`flex items-center gap-3 px-5 py-3 ${
+                        s.website?.trim() ? 'transition hover:-translate-y-0.5 hover:shadow-md' : ''
+                      }`}
+                    >
+                      {s.logo_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={s.logo_url} alt={s.name} className="h-8 w-auto object-contain" />
+                      ) : (
+                        <span className="font-bold text-slate-700">{s.name}</span>
+                      )}
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium capitalize text-slate-500">{s.tier}</span>
+                    </Card>
+                  );
+                  return s.website?.trim() ? (
+                    <a
+                      key={s.id}
+                      href={s.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`Visit ${s.name}`}
+                      aria-label={`${s.name} website`}
+                    >
+                      {card}
+                    </a>
+                  ) : (
+                    <span key={s.id}>{card}</span>
+                  );
+                })}
               </div>
             </section>
           )}

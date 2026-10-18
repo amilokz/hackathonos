@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
 import { Container, Card, PageHeader, LinkButton, BrandFooter } from '@/components/ui';
+import { formatEntryFee } from '@/lib/format';
 import RegisterForm from './RegisterForm';
 import type { EventRow } from '@/lib/types';
 
@@ -32,7 +33,19 @@ export default async function TeamRegisterPage({ params }: { params: { slug: str
             </div>
           </Card>
         ) : (
-          <RegisterForm eventId={event.id} eventSlug={event.slug} />
+          <>
+            {event.entry_fee > 0 && event.payment_instructions?.trim() && (
+              <Card className="mb-6 border-amber-200 bg-amber-50 p-5 sm:p-6">
+                <p className="font-bold text-slate-900">
+                  💳 Entry fee: {formatEntryFee(event.entry_fee)}
+                </p>
+                <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-slate-600">
+                  {event.payment_instructions}
+                </p>
+              </Card>
+            )}
+            <RegisterForm eventId={event.id} eventSlug={event.slug} />
+          </>
         )}
         <p className="mt-4 text-center text-sm text-slate-400">
           <a href={`/e/${event.slug}`} className="hover:underline">← Back to {event.name}</a>
