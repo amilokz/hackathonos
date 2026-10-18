@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
 import { migrate } from '@/lib/db';
-import { Container, TopNav, LinkButton } from '@/components/ui';
-import { PageHeader } from '@/components/design-system';
-import LogoutButton from '../../../LogoutButton';
+import OrganizerShell from '@/components/OrganizerShell';
+import { Container, LinkButton } from '@/components/ui';
+import { PageHeader, DsIcon } from '@/components/design-system';
 import SettingsClient from './SettingsClient';
 
 export const dynamic = 'force-dynamic';
@@ -16,8 +16,7 @@ export default async function SettingsPage({ params }: { params: { id: string } 
   if (!event) redirect('/dashboard');
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <TopNav title={organizer.name} right={<LogoutButton />} />
+    <OrganizerShell organizer={organizer} active="settings" eventContext={{ id: event.id, slug: event.slug }}>
       <Container className="max-w-3xl py-6 sm:py-8">
         <PageHeader
           breadcrumbs={[
@@ -29,12 +28,13 @@ export default async function SettingsPage({ params }: { params: { id: string } 
           subtitle={`${event.name} · entry fees, payments and white-label branding`}
           actions={
             <LinkButton href={`/dashboard/events/${params.id}`} variant="secondary">
-              ← Back to event
+              <DsIcon name="chevronLeft" className="h-4 w-4" />
+              Back to event
             </LinkButton>
           }
         />
         <SettingsClient eventId={params.id} />
       </Container>
-    </div>
+    </OrganizerShell>
   );
 }

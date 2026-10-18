@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
 import { migrate } from '@/lib/db';
-import { Container, TopNav, LinkButton } from '@/components/ui';
-import { PageHeader } from '@/components/design-system';
-import LogoutButton from '../../../LogoutButton';
+import { ensureCertificateColumns } from '@/lib/certificate-columns';
+import OrganizerShell from '@/components/OrganizerShell';
+import { Container, LinkButton } from '@/components/ui';
+import { PageHeader, DsIcon } from '@/components/design-system';
 import CertificatesClient from './CertificatesClient';
 
 export const dynamic = 'force-dynamic';
@@ -16,8 +17,7 @@ export default async function CertificatesPage({ params }: { params: { id: strin
   if (!event) redirect('/dashboard');
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <TopNav title={organizer.name} right={<LogoutButton />} />
+    <OrganizerShell organizer={organizer} active="certificates" eventContext={{ id: event.id, slug: event.slug }}>
       <Container className="max-w-3xl py-6 sm:py-8">
         <PageHeader
           breadcrumbs={[
@@ -29,12 +29,13 @@ export default async function CertificatesPage({ params }: { params: { id: strin
           subtitle={`${event.name} · QR-verified, printable`}
           actions={
             <LinkButton href={`/dashboard/events/${params.id}`} variant="secondary">
-              ← Back to event
+              <DsIcon name="chevronLeft" className="h-4 w-4" />
+              Back to event
             </LinkButton>
           }
         />
         <CertificatesClient eventId={params.id} />
       </Container>
-    </div>
+    </OrganizerShell>
   );
 }

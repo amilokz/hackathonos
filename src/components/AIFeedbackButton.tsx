@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Card, Button, ErrorNote } from '@/components/ui';
+import { DsIcon } from '@/components/design-system';
 
 export interface AiFeedback {
   strengths: string[];
@@ -13,7 +14,7 @@ export interface AiFeedback {
 const DISCLAIMER = 'AI-generated suggestion — final decision rests with human judges.';
 
 /**
- * "🤖 Get AI Feedback" button for a project. POSTs to /api/ai/feedback,
+ * "Get AI Feedback" button for a project. POSTs to /api/ai/feedback,
  * shows a loading state, then renders the feedback card (cached results are
  * served server-side unless regenerated). "Regenerate" forces fresh AI
  * output. When the backend reports AI is not configured, a muted notice
@@ -54,8 +55,9 @@ export default function AIFeedbackButton({ projectId }: { projectId: string }) {
   // AI isn't set up on this deployment — show a muted notice instead of a dead button.
   if (notConfigured) {
     return (
-      <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-        🤖 AI feedback isn&apos;t configured on this deployment.
+      <p className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+        <DsIcon name="bot" className="h-4 w-4 shrink-0" />
+        AI feedback isn&apos;t configured on this deployment.
       </p>
     );
   }
@@ -65,14 +67,20 @@ export default function AIFeedbackButton({ projectId }: { projectId: string }) {
       <ErrorNote message={error} />
       {!feedback && (
         <Button onClick={() => load(false)} disabled={loading}>
-          {loading ? '🤖 Analyzing project…' : '🤖 Get AI Feedback'}
+          <span className="inline-flex items-center gap-2">
+            <DsIcon name="bot" className="h-4 w-4" />
+            {loading ? 'Analyzing project…' : 'Get AI Feedback'}
+          </span>
         </Button>
       )}
 
       {feedback && (
         <Card className="p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="text-lg font-bold tracking-tight text-slate-900">🤖 AI Project Feedback</h3>
+            <h3 className="flex items-center gap-2 text-lg font-bold tracking-tight text-slate-900">
+              <DsIcon name="bot" className="h-5 w-5 text-indigo-600" />
+              AI Project Feedback
+            </h3>
             <button
               onClick={() => load(true)}
               disabled={loading}
@@ -83,7 +91,10 @@ export default function AIFeedbackButton({ projectId }: { projectId: string }) {
           </div>
 
           {loading && (
-            <p className="mt-4 text-sm text-slate-500">🤖 Analyzing project…</p>
+            <p className="mt-4 flex items-center gap-2 text-sm text-slate-500">
+              <DsIcon name="bot" className="h-4 w-4" />
+              Analyzing project…
+            </p>
           )}
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">

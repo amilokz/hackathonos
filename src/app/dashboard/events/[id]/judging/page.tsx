@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
-import { getDb } from '@/lib/db';
+import { getDb, migrate } from '@/lib/db';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
-import { Container, TopNav, LinkButton } from '@/components/ui';
-import { PageHeader } from '@/components/design-system';
-import LogoutButton from '../../../LogoutButton';
+import OrganizerShell from '@/components/OrganizerShell';
+import { Container, LinkButton } from '@/components/ui';
+import { PageHeader, DsIcon } from '@/components/design-system';
 import JudgingBoard from './JudgingBoard';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +11,8 @@ export const dynamic = 'force-dynamic';
 export default async function JudgingPage({ params }: { params: { id: string } }) {
   const org = await requireOrganizer();
   if (!org) redirect('/login');
+
+  await migrate();
   const event = await getOwnedEvent(params.id, org.id);
   if (!event) redirect('/dashboard');
 
@@ -79,8 +81,7 @@ export default async function JudgingPage({ params }: { params: { id: string } }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <TopNav title={org.name} right={<LogoutButton />} />
+    <OrganizerShell organizer={org} active="submissions" eventContext={{ id: event.id, slug: event.slug }}>
       <Container className="max-w-6xl py-6 sm:py-8">
         <PageHeader
           breadcrumbs={[
@@ -89,11 +90,12 @@ export default async function JudgingPage({ params }: { params: { id: string } }
             { label: 'Judging' },
           ]}
           title="Judging"
-          subtitle={event.name}
+          subtitle={`${event.name} · ${projects.length} project${projects.length === 1 ? '' : 's'}`}
           actions={
             <div className="flex flex-wrap gap-2">
               <LinkButton href={`/dashboard/events/${params.id}`} variant="secondary">
-                ← Back to event
+                <DsIcon name="chevronLeft" className="h-4 w-4" />
+                Back to event
               </LinkButton>
               <a
                 href={`/e/${event.slug}/leaderboard`}
@@ -101,7 +103,8 @@ export default async function JudgingPage({ params }: { params: { id: string } }
                 rel="noreferrer"
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
-                View public leaderboard ↗
+                View public leaderboard
+                <DsIcon name="externalLink" className="h-4 w-4" />
               </a>
             </div>
           }
@@ -114,6 +117,6 @@ export default async function JudgingPage({ params }: { params: { id: string } }
           initialAi={aiByProject as never}
         />
       </Container>
-    </div>
+    </OrganizerShell>
   );
 }
