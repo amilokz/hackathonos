@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { DsIcon } from '@/components/design-system';
 
 /**
  * Foolproof Publish/Unpublish toggle. Calls PATCH /api/events/[id] with
@@ -51,7 +52,7 @@ export default function PublishToggle({
         kind: 'ok',
         text:
           newStatus === 'published'
-            ? 'Event is live 🎉 — participants can now register.'
+            ? 'Event is live — participants can now register.'
             : 'Event unpublished — the public page is now offline.',
       });
       router.refresh();
@@ -81,7 +82,17 @@ export default function PublishToggle({
             : `inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${smallStyles}`
         }
       >
-        {busy ? 'Working…' : published ? '⏸ Unpublish' : '🚀 Publish event'}
+        {busy ? (
+          'Working…'
+        ) : published ? (
+          <>
+            <DsIcon name="pause" className="h-4 w-4" /> Unpublish
+          </>
+        ) : (
+          <>
+            <DsIcon name="rocket" className="h-4 w-4" /> Publish event
+          </>
+        )}
       </button>
       {message && (
         <span

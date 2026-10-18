@@ -1,6 +1,7 @@
 'use client';
 
 import CopyLinkButton from '@/components/CopyLinkButton';
+import { DsIcon } from '@/components/design-system';
 
 /**
  * Public-link list for the event manage page, with per-link copy buttons.
@@ -10,9 +11,11 @@ import CopyLinkButton from '@/components/CopyLinkButton';
 export default function QuickLinks({ slug, status }: { slug: string; status: string }) {
   if (status === 'draft') {
     return (
-      <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-        ⚠️ Event is in <strong>Draft</strong> — public links are disabled. Set Status to{' '}
+      <p className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+        <DsIcon name="alertTriangle" className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>Event is in <strong>Draft</strong> — public links are disabled. Set Status to{' '}
         <strong>Published</strong> above and save to activate them.
+        </span>
       </p>
     );
   }
@@ -28,9 +31,11 @@ export default function QuickLinks({ slug, status }: { slug: string; status: str
   return (
     <div className="mt-3">
       {status === 'closed' && (
-        <p className="mb-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
-          🏁 Event is <strong>closed</strong> — the public page and leaderboard stay live, but
+        <p className="mb-2 flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+          <DsIcon name="flag" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>Event is <strong>closed</strong> — the public page and leaderboard stay live, but
           registration/submission links show an “event ended” note.
+          </span>
         </p>
       )}
       <ul className="space-y-2 text-sm">

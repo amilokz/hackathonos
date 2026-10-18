@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { DsIcon } from '@/components/design-system';
 
 interface Team {
   id: string;
@@ -100,7 +101,9 @@ export default function PendingApprovals({ eventId }: { eventId: string }) {
   if (teams.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-6 text-center">
-        <p className="text-2xl">✅</p>
+        <span className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm">
+          <DsIcon name="checkCircle" className="h-6 w-6" />
+        </span>
         <p className="mt-2 text-sm font-semibold text-slate-700">All caught up</p>
         <p className="mt-0.5 text-xs text-slate-500">No teams waiting for approval.</p>
       </div>
@@ -128,7 +131,7 @@ export default function PendingApprovals({ eventId }: { eventId: string }) {
               onClick={() => decide(t.id, 'approve')}
               className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-60"
             >
-              {busyId === t.id ? 'Working…' : '✓ Approve'}
+              {busyId === t.id ? 'Working…' : 'Approve'}
             </button>
             <button
               type="button"

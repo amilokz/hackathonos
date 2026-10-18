@@ -2,20 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Card, Button, ErrorNote } from '@/components/ui';
+import { DataTable, StatusPill, DsIcon, type DataTableColumn } from '@/components/design-system';
 import type { EmailLogRow } from '@/app/api/events/[id]/emails/route';
-
-const TYPE_LABEL: Record<string, string> = {
-  registration: 'Registration',
-  deadline: 'Deadline',
-  winner: 'Winner',
-  broadcast: 'Broadcast',
-};
-
-function statusPill(status: string): string {
-  if (status === 'sent') return 'bg-emerald-100 text-emerald-700';
-  if (status === 'skipped_no_key') return 'bg-slate-200 text-slate-600';
-  return 'bg-red-100 text-red-700';
-}
 
 function statusLabel(status: string): string {
   if (status === 'sent') return 'Sent';
@@ -105,7 +93,7 @@ export default function EmailsSection({ eventId }: { eventId: string }) {
         setError(data.error ?? 'Failed to send deadline reminder.');
         return;
       }
-      setNotice(`Deadline reminder ${resultLine(data).replace('Done: ', '').replace(/^/, '→ ')} Deadline: ${data.deadline}.`);
+      setNotice(`Deadline reminder ${resultLine(data).replace('Done: ', '')} Deadline: ${data.deadline}.`);
       await load();
     } catch {
       setError('Failed to send deadline reminder — check your connection and try again.');
@@ -114,9 +102,60 @@ export default function EmailsSection({ eventId }: { eventId: string }) {
     }
   }
 
+  const columns: DataTableColumn<EmailLogRow>[] = [
+    {
+      key: 'to',
+      header: 'To',
+      sortable: true,
+      value: (e) => (e.to_email || '').toLowerCase(),
+      render: (e) => (
+        <span className="block max-w-[220px] truncate text-slate-700" title={e.to_email}>
+          {e.to_email}
+        </span>
+      ),
+    },
+    {
+      key: 'subject',
+      header: 'Subject',
+      sortable: true,
+      value: (e) => (e.subject || '').toLowerCase(),
+      render: (e) => (
+        <span className="block max-w-[260px] truncate text-slate-700" title={e.subject}>
+          {e.subject}
+        </span>
+      ),
+    },
+    {
+      key: 'type',
+      header: 'Type',
+      value: (e) => e.type || '',
+      render: (e) => <StatusPill status={e.type || 'info'} />,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      value: (e) => statusLabel(e.status),
+      render: (e) => <StatusPill status={statusLabel(e.status)} />,
+    },
+    {
+      key: 'time',
+      header: 'Time',
+      sortable: true,
+      value: (e) => e.sent_at || '',
+      render: (e) => (
+        <span className="whitespace-nowrap text-xs text-slate-400">
+          {e.sent_at ? new Date(e.sent_at).toLocaleString() : '—'}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <Card className="p-5 sm:p-6">
-      <h2 className="text-lg font-bold text-slate-900">✉️ Emails</h2>
+      <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+        <DsIcon name="mail" className="h-5 w-5 text-indigo-600" />
+        Emails
+      </h2>
       <p className="mt-1 text-sm text-slate-500">
         Email all approved teams. Broadcasts are limited to one per 5 minutes; every send is logged below.
       </p>
@@ -158,56 +197,36 @@ export default function EmailsSection({ eventId }: { eventId: string }) {
         </label>
         <div className="flex flex-wrap gap-2">
           <Button onClick={sendBroadcast} disabled={busy !== null}>
-            {busy === 'broadcast' ? 'Sending…' : '📣 Send broadcast'}
+            {busy === 'broadcast' ? (
+              'Sending…'
+            ) : (
+              <>
+                <DsIcon name="send" className="h-4 w-4" /> Send broadcast
+              </>
+            )}
           </Button>
           <Button variant="secondary" onClick={sendDeadlineReminder} disabled={busy !== null}>
-            {busy === 'deadline' ? 'Sending…' : '⏰ Send deadline reminder'}
+            {busy === 'deadline' ? (
+              'Sending…'
+            ) : (
+              <>
+                <DsIcon name="clock" className="h-4 w-4" /> Send deadline reminder
+              </>
+            )}
           </Button>
         </div>
       </div>
 
       {/* Email log */}
       <h3 className="mb-2 mt-6 font-semibold text-slate-900">Email log</h3>
-      {emails.length === 0 ? (
-        <p className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-400">
-          No emails sent yet — broadcasts, deadline reminders and registration confirmations will appear here.
-        </p>
-      ) : (
-        <div className="-mx-5 overflow-x-auto px-5 sm:-mx-6 sm:px-6">
-          <table className="w-full min-w-[560px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 text-xs uppercase tracking-widest text-slate-400">
-                <th className="py-2 pr-3 font-bold">To</th>
-                <th className="py-2 pr-3 font-bold">Subject</th>
-                <th className="py-2 pr-3 font-bold">Type</th>
-                <th className="py-2 pr-3 font-bold">Status</th>
-                <th className="py-2 font-bold">Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {emails.map((e) => (
-                <tr key={e.id} className="border-b border-slate-50 last:border-0">
-                  <td className="max-w-[180px] truncate py-2.5 pr-3 text-slate-700" title={e.to_email}>
-                    {e.to_email}
-                  </td>
-                  <td className="max-w-[220px] truncate py-2.5 pr-3 text-slate-700" title={e.subject}>
-                    {e.subject}
-                  </td>
-                  <td className="py-2.5 pr-3 text-slate-500">{TYPE_LABEL[e.type] ?? e.type}</td>
-                  <td className="py-2.5 pr-3">
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${statusPill(e.status)}`}>
-                      {statusLabel(e.status)}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap py-2.5 text-xs text-slate-400">
-                    {new Date(e.sent_at).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        rows={emails}
+        searchable
+        searchPlaceholder="Search by recipient or subject…"
+        emptyTitle="No emails sent yet"
+        emptyText="Broadcasts, deadline reminders and registration confirmations will appear here."
+      />
     </Card>
   );
 }

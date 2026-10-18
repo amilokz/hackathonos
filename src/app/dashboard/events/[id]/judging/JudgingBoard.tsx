@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card, Button, Field, inputClass, ErrorNote } from '@/components/ui';
 import AIFeedbackButton from '@/components/AIFeedbackButton';
+import { DsIcon } from '@/components/design-system';
 
 interface Criterion {
   id: string;
@@ -172,7 +173,7 @@ export default function JudgingBoard({
                 <div className="text-xs text-slate-500">{p.team_name}</div>
                 <div className="mt-1 text-xs text-slate-400">
                   {n > 0 ? `${Array.from(new Set((scores[p.id] ?? []).map((s) => s.judge_name))).length} judge(s)` : 'No scores yet'}
-                  {hasAi && <span className="ml-2 text-purple-600">🤖 AI scored</span>}
+                  {hasAi && <span className="ml-2 inline-flex items-center gap-1 text-purple-600"><DsIcon name="bot" className="h-3.5 w-3.5" /> AI scored</span>}
                 </div>
               </button>
             );
@@ -195,13 +196,13 @@ export default function JudgingBoard({
             {project.description && <p className="mb-3 text-sm text-slate-600">{project.description}</p>}
             <div className="flex flex-wrap gap-3 text-sm">
               {project.demo_url && (
-                <a href={project.demo_url} target="_blank" rel="noreferrer" className="font-medium text-indigo-600 hover:underline">
-                  🔗 Live demo
+                <a href={project.demo_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-indigo-600 hover:underline">
+                  <DsIcon name="link" className="h-3.5 w-3.5" /> Live demo
                 </a>
               )}
               {project.repo_url && (
-                <a href={project.repo_url} target="_blank" rel="noreferrer" className="font-medium text-indigo-600 hover:underline">
-                  💻 Repository
+                <a href={project.repo_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-medium text-indigo-600 hover:underline">
+                  <DsIcon name="laptop" className="h-3.5 w-3.5" /> Repository
                 </a>
               )}
             </div>
@@ -218,7 +219,7 @@ export default function JudgingBoard({
           {/* AI pre-score */}
           <div className="rounded-2xl border border-purple-200 bg-purple-50 p-5 shadow-sm">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="font-bold text-purple-900">🤖 AI pre-score</h3>
+              <h3 className="flex items-center gap-2 font-bold text-purple-900"><DsIcon name="bot" className="h-5 w-5" /> AI pre-score</h3>
               <button
                 onClick={runAiScore}
                 disabled={aiBusy}

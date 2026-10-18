@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, Button, Field, inputClass, ErrorNote, SuccessNote } from '@/components/ui';
+import { DataTable, StatusPill, type DataTableColumn } from '@/components/design-system';
 
 const TYPES = [
   { value: 'participant', label: 'Participant' },
@@ -73,9 +74,66 @@ export default function CertificatesClient({ eventId }: { eventId: string }) {
     }
   }
 
+  const certColumns: DataTableColumn<Cert>[] = [
+    {
+      key: 'recipient',
+      header: 'Recipient',
+      sortable: true,
+      value: (c) => c.recipient_name.toLowerCase(),
+      render: (c) => <span className="font-semibold text-slate-900">{c.recipient_name}</span>,
+    },
+    {
+      key: 'email',
+      header: 'Email',
+      render: (c) => (
+        <span className="block max-w-[220px] truncate text-xs text-slate-500" title={c.recipient_email || undefined}>
+          {c.recipient_email || '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'type',
+      header: 'Type',
+      sortable: true,
+      value: (c) => c.type,
+      render: (c) => <StatusPill status={c.type} />,
+    },
+    {
+      key: 'code',
+      header: 'Verification code',
+      render: (c) => <span className="font-mono text-xs font-semibold text-slate-600">{c.verification_code}</span>,
+    },
+    {
+      key: 'issued',
+      header: 'Issued',
+      sortable: true,
+      value: (c) => c.created_at || '',
+      render: (c) => (
+        <span className="whitespace-nowrap text-xs text-slate-500">
+          {c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'View',
+      align: 'right',
+      render: (c) => (
+        <a
+          href={`/cert/${c.verification_code}`}
+          target="_blank"
+          rel="noreferrer"
+          className="shrink-0 rounded-xl border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+        >
+          View
+        </a>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      <Card className="p-6 sm:p-8">
+      <Card className="p-5 sm:p-6">
         <h2 className="text-lg font-bold text-slate-900">Generate certificates</h2>
         <p className="mt-1 text-sm text-slate-500">
           One per line. Use <code className="rounded bg-slate-100 px-1 text-slate-600">Name,email</code> to
@@ -118,32 +176,21 @@ export default function CertificatesClient({ eventId }: { eventId: string }) {
         </div>
       </Card>
 
-      <Card className="p-6 sm:p-8">
-        <h2 className="text-lg font-bold text-slate-900">Issued certificates ({certs.length})</h2>
-        {certs.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">None yet.</p>
-        ) : (
-          <ul className="mt-4 divide-y divide-slate-100">
-            {certs.map((c) => (
-              <li key={c.id} className="flex items-center justify-between gap-4 py-3">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-slate-900">{c.recipient_name}</p>
-                  <p className="text-xs capitalize text-slate-500">
-                    {c.type} · <span className="font-mono">{c.verification_code}</span>
-                  </p>
-                </div>
-                <a
-                  href={`/cert/${c.verification_code}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="shrink-0 rounded-xl border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  View
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
+      <Card className="p-5 sm:p-6">
+        <h2 className="text-lg font-bold text-slate-900">Issued certificates</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          QR-verified certificates, printable from the public verification page.
+        </p>
+        <div className="mt-4">
+          <DataTable
+            columns={certColumns}
+            rows={certs}
+            searchable
+            searchPlaceholder="Search recipients or codes…"
+            emptyTitle="No certificates issued yet"
+            emptyText="Generate your first certificates above."
+          />
+        </div>
       </Card>
     </div>
   );

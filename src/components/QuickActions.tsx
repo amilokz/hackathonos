@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PublishToggle from './PublishToggle';
+import { DsIcon } from '@/components/design-system';
 
 const BTN =
   'inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60';
@@ -110,7 +111,7 @@ export default function QuickActions({
             disabled={busy !== null}
             className={`${BTN} border-slate-300 bg-white text-slate-600 hover:bg-slate-50`}
           >
-            {busy === 'close' ? 'Closing…' : '🔒 Close event'}
+            {busy === 'close' ? 'Closing…' : (<><DsIcon name="lock" className="h-3.5 w-3.5" /> Close event</>)}
           </button>
         )}
         <button
@@ -127,7 +128,7 @@ export default function QuickActions({
           disabled={busy !== null}
           className={`${BTN} border-red-200 bg-red-50 text-red-600 hover:bg-red-100`}
         >
-          🗑 Delete
+          <DsIcon name="trash" className="h-3.5 w-3.5" /> Delete
         </button>
       </div>
 

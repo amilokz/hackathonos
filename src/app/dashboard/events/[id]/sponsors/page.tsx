@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
 import { migrate } from '@/lib/db';
-import { Container, PageHeader, TopNav, LinkButton, Breadcrumb } from '@/components/ui';
+import { Container, TopNav, LinkButton } from '@/components/ui';
+import { PageHeader } from '@/components/design-system';
 import LogoutButton from '../../../LogoutButton';
 import SponsorsClient from './SponsorsClient';
 
@@ -17,18 +18,16 @@ export default async function SponsorsPage({ params }: { params: { id: string } 
   return (
     <div className="min-h-screen bg-slate-50">
       <TopNav title={organizer.name} right={<LogoutButton />} />
-      <Container className="max-w-3xl py-10">
-        <Breadcrumb
-          items={[
+      <Container className="max-w-3xl py-6 sm:py-8">
+        <PageHeader
+          breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
             { label: event.name, href: `/dashboard/events/${params.id}` },
             { label: 'Sponsors' },
           ]}
-        />
-        <PageHeader
           title="Sponsors"
           subtitle={`${event.name} · shown on the public event page, grouped by tier`}
-          action={
+          actions={
             <LinkButton href={`/dashboard/events/${params.id}`} variant="secondary">
               ← Back to event
             </LinkButton>

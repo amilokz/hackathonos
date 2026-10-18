@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Scanner from './Scanner';
 import { Card } from '@/components/ui';
+import { DataTable, DsIcon, type DataTableColumn } from '@/components/design-system';
 
 interface RosterCheckin {
   member_name: string;
@@ -139,7 +140,7 @@ export default function CheckinClient({
         } else if (!res.ok) {
           setScanMessage({ ok: false, text: data.error ?? 'Check-in failed.' });
         } else {
-          setScanMessage({ ok: true, text: `✅ ${memberName} checked in.` });
+          setScanMessage({ ok: true, text: `${memberName} checked in.` });
           setRoster((prev) =>
             prev
               ? {
@@ -169,6 +170,34 @@ export default function CheckinClient({
   const checkedByName = new Map(
     (roster?.already_checked_in ?? []).map((c) => [c.member_name.toLowerCase(), c.checked_in_at]),
   );
+
+  const checkinColumns: DataTableColumn<ListCheckin>[] = [
+    {
+      key: 'member',
+      header: 'Member',
+      sortable: true,
+      value: (c) => c.member_name.toLowerCase(),
+      render: (c) => <span className="font-semibold text-slate-800">{c.member_name}</span>,
+    },
+    {
+      key: 'team',
+      header: 'Team',
+      sortable: true,
+      value: (c) => c.team_name.toLowerCase(),
+      render: (c) => <span className="text-xs text-slate-500">{c.team_name}</span>,
+    },
+    {
+      key: 'time',
+      header: 'Checked in at',
+      sortable: true,
+      value: (c) => c.checked_in_at || '',
+      render: (c) => (
+        <span className="whitespace-nowrap text-xs font-medium text-slate-500">
+          {formatTime(c.checked_in_at)}
+        </span>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -238,8 +267,9 @@ export default function CheckinClient({
                     >
                       <span className="font-semibold text-slate-800">{member}</span>
                       {checkedAt ? (
-                        <span className="text-sm font-semibold text-emerald-700">
-                          ✓ {formatTime(checkedAt)}
+                        <span className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700">
+                          <DsIcon name="check" className="h-4 w-4" />
+                          {formatTime(checkedAt)}
                         </span>
                       ) : (
                         <button
@@ -275,9 +305,10 @@ export default function CheckinClient({
             </div>
             <a
               href={`/api/events/${eventId}/checkin/export`}
-              className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
-              ⬇ Export CSV
+              <DsIcon name="download" className="h-4 w-4" />
+              Export CSV
             </a>
           </div>
 
@@ -292,27 +323,17 @@ export default function CheckinClient({
             />
           </div>
 
-          <ul className="mt-4 max-h-96 space-y-2 overflow-y-auto">
-            {list.map((c) => (
-              <li
-                key={c.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 px-4 py-2.5 text-sm"
-              >
-                <div>
-                  <p className="font-semibold text-slate-800">{c.member_name}</p>
-                  <p className="text-xs text-slate-500">{c.team_name}</p>
-                </div>
-                <span className="shrink-0 text-xs font-medium text-slate-500">
-                  {formatTime(c.checked_in_at)}
-                </span>
-              </li>
-            ))}
-          </ul>
-          {list.length === 0 && (
-            <p className="mt-4 text-sm text-slate-500">
-              Nobody has checked in yet — scan the first team pass above.
-            </p>
-          )}
+          <div className="mt-4 max-h-96 overflow-y-auto">
+            <DataTable
+              columns={checkinColumns}
+              rows={list}
+              searchable
+              searchPlaceholder="Search members or teams…"
+              pageSize={8}
+              emptyTitle="Nobody has checked in yet"
+              emptyText="Scan the first team pass above."
+            />
+          </div>
         </Card>
       </div>
     </div>

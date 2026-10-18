@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
+import { DsIcon } from '@/components/design-system';
 
 /**
  * Progressive-enhancement QR scanner: streams the phone camera, decodes
@@ -110,9 +111,10 @@ export default function Scanner({ onScanned }: { onScanned: (code: string) => vo
             type="button"
             onClick={start}
             disabled={starting}
-            className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-60"
           >
-            {starting ? 'Starting camera…' : '📷 Scan QR with camera'}
+            <DsIcon name="camera" className="h-4 w-4" />
+            {starting ? 'Starting camera…' : 'Scan QR with camera'}
           </button>
           {error && <p className="mt-2 text-sm text-slate-500">{error}</p>}
           {!error && (

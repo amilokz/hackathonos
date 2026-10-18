@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getDb } from '@/lib/db';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
-import { Container, PageHeader, TopNav, LinkButton, Breadcrumb } from '@/components/ui';
+import { Container, TopNav, LinkButton } from '@/components/ui';
+import { PageHeader } from '@/components/design-system';
 import LogoutButton from '../../../LogoutButton';
 import CriteriaManager from './CriteriaManager';
 
@@ -20,18 +21,16 @@ export default async function CriteriaPage({ params }: { params: { id: string } 
   return (
     <div className="min-h-screen bg-slate-50">
       <TopNav title={org.name} right={<LogoutButton />} />
-      <Container className="max-w-3xl py-10">
-        <Breadcrumb
-          items={[
+      <Container className="max-w-3xl py-6 sm:py-8">
+        <PageHeader
+          breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
             { label: event.name, href: `/dashboard/events/${params.id}` },
             { label: 'Criteria' },
           ]}
-        />
-        <PageHeader
           title="Judging criteria"
           subtitle={event.name}
-          action={
+          actions={
             <div className="flex flex-wrap gap-2">
               <LinkButton href={`/dashboard/events/${params.id}`} variant="secondary">
                 ← Back to event

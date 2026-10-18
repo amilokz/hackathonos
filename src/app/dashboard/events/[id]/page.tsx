@@ -2,13 +2,14 @@ import { redirect, notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
 import OrganizerShell from '@/components/OrganizerShell';
-import { Breadcrumbs } from '@/components/Breadcrumbs';
 import EmptyState from '@/components/EmptyState';
 import CopyButton from '@/components/CopyButton';
-import { Container, Card } from '@/components/ui';
+import { Container, Card, LinkButton } from '@/components/ui';
+import { PageHeader, StatusPill, DsIcon, CardTitle, CardDescription } from '@/components/design-system';
 import EventForm from './EventForm';
 import PublishToggle from '@/components/PublishToggle';
 import QuickActions from '@/components/QuickActions';
+import QuickLinks from './QuickLinks';
 import PendingApprovals from '@/components/PendingApprovals';
 import TeamsTable from '@/components/TeamsTable';
 import JudgesSection from '@/components/JudgesSection';
@@ -18,12 +19,6 @@ import EmailsSection from '@/components/EmailsSection';
 import type { EventRow } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
-
-const STATUS_PILL: Record<string, string> = {
-  draft: 'bg-amber-100 text-amber-800',
-  published: 'bg-emerald-100 text-emerald-700',
-  closed: 'bg-slate-200 text-slate-600',
-};
 
 function SidebarSection({ title, links }: { title: string; links: { href: string; label: string; desc: string }[] }) {
   return (
@@ -54,16 +49,20 @@ function QuickNavButtons({ eventId, slug }: { eventId: string; slug: string }) {
   return (
     <div className="flex flex-wrap gap-2">
       <span className={`${base} border-indigo-600 bg-indigo-600 text-white`} aria-current="page">
-        ⚙️ Manage
+        <DsIcon name="settings" className="h-4 w-4" />
+        Manage
       </span>
       <a href={`/dashboard/events/${eventId}/analytics`} className={`${base} ${idle}`}>
-        📊 Analytics
+        <DsIcon name="chart" className="h-4 w-4" />
+        Analytics
       </a>
       <a href={`/dashboard/events/${eventId}/checkin`} className={`${base} ${idle}`}>
-        📱 Check-in
+        <DsIcon name="qrCode" className="h-4 w-4" />
+        Check-in
       </a>
       <a href={`/e/${slug}/live`} target="_blank" rel="noreferrer" className={`${base} ${idle}`}>
-        🖥️ Live screen
+        <DsIcon name="radio" className="h-4 w-4" />
+        Live screen
       </a>
     </div>
   );
@@ -88,73 +87,57 @@ export default async function ManageEventPage({ params }: { params: { id: string
 
   const id = event.id;
   const setupLinks = [
-    { href: '#basic-info', label: '📝 Basic information', desc: 'Name, dates, prizes, schedule' },
-    { href: `/dashboard/events/${id}/sponsors`, label: '🤝 Sponsors', desc: 'Sponsor logos on the public page' },
-    { href: '#judges', label: '🧑‍⚖️ Judges', desc: 'Judge access & assignments' },
-    { href: `/dashboard/events/${id}/criteria`, label: '📋 Criteria', desc: 'Judging criteria & weights' },
-    { href: `/dashboard/events/${id}/certificates`, label: '🎓 Certificates', desc: 'QR-verified participant certificates' },
-    { href: `/dashboard/events/${id}/settings`, label: '⚙️ Settings', desc: 'Entry fees, approvals & white label' },
+    { href: '#basic-info', label: 'Basic information', desc: 'Name, dates, prizes, schedule' },
+    { href: `/dashboard/events/${id}/sponsors`, label: 'Sponsors', desc: 'Sponsor logos on the public page' },
+    { href: '#judges', label: 'Judges', desc: 'Judge access & assignments' },
+    { href: `/dashboard/events/${id}/criteria`, label: 'Criteria', desc: 'Judging criteria & weights' },
+    { href: `/dashboard/events/${id}/certificates`, label: 'Certificates', desc: 'QR-verified participant certificates' },
+    { href: `/dashboard/events/${id}/settings`, label: 'Settings', desc: 'Entry fees, approvals & white label' },
   ];
   const manageLinks = [
-    { href: '#teams', label: `👥 Teams & applications${pendingTeams > 0 ? ` (${pendingTeams} pending)` : ''}`, desc: 'Approve registrations, manage members' },
-    { href: `/dashboard/events/${id}/judging`, label: '⚖️ Projects & judging', desc: 'Score projects & see AI pre-scores' },
-    { href: `/dashboard/events/${id}/checkin`, label: '✅ Check-in', desc: 'On-site QR team check-in' },
-    { href: `/dashboard/events/${id}/announcements`, label: '📢 Announcements', desc: 'Broadcast messages, deadlines & winners' },
-    { href: '#emails', label: '✉️ Emails', desc: 'Email broadcasts, deadline reminders & log' },
-    { href: `/dashboard/events/${id}/analytics`, label: '📊 Analytics', desc: 'Mission Control live stats' },
+    { href: '#teams', label: `Teams & applications${pendingTeams > 0 ? ` (${pendingTeams} pending)` : ''}`, desc: 'Approve registrations, manage members' },
+    { href: `/dashboard/events/${id}/judging`, label: 'Projects & judging', desc: 'Score projects & see AI pre-scores' },
+    { href: `/dashboard/events/${id}/checkin`, label: 'Check-in', desc: 'On-site QR team check-in' },
+    { href: `/dashboard/events/${id}/announcements`, label: 'Announcements', desc: 'Broadcast messages, deadlines & winners' },
+    { href: '#emails', label: 'Emails', desc: 'Email broadcasts, deadline reminders & log' },
+    { href: `/dashboard/events/${id}/analytics`, label: 'Analytics', desc: 'Mission Control live stats' },
   ];
 
   return (
     <OrganizerShell organizer={org} active="events" eventContext={{ id: event.id, slug: event.slug }}>
-      <Container className="py-8 sm:py-10">
-        <Breadcrumbs
-          items={[{ label: 'Dashboard', href: '/dashboard' }, { label: event.name }]}
+      <Container className="py-6 sm:py-8">
+        <PageHeader
+          breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: event.name }]}
+          title={event.name}
+          subtitle={`${teams} teams · ${projects} projects${pendingTeams > 0 ? ` · ${pendingTeams} awaiting approval` : ''}`}
+          actions={<PublishToggle eventId={event.id} status={event.status} size="lg" />}
         />
 
-        {/* Summary bar */}
+        {/* Summary card */}
         <Card className="mb-6 p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-                  {event.name}
-                </h1>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${
-                    STATUS_PILL[event.status] ?? STATUS_PILL.draft
-                  }`}
-                >
-                  {event.status}
+          <div className="flex flex-wrap items-center gap-3">
+            <StatusPill status={event.status} />
+            {(event.status === 'published' || event.status === 'closed') && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                  Public URL
                 </span>
+                <a
+                  href={`/e/${event.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-lg bg-slate-100 px-3 py-1.5 font-mono text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                >
+                  /e/{event.slug}
+                </a>
+                <CopyButton text={`/e/${event.slug}`} addOrigin label="Copy link" />
               </div>
-              <p className="mt-1.5 text-sm text-slate-500">
-                {teams} teams · {projects} projects
-                {pendingTeams > 0 && (
-                  <span className="ml-2 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
-                    {pendingTeams} awaiting approval
-                  </span>
-                )}
-              </p>
-              {(event.status === 'published' || event.status === 'closed') && (
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
-                    Public URL
-                  </span>
-                  <a
-                    href={`/e/${event.slug}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-lg bg-slate-100 px-3 py-1.5 font-mono text-xs font-semibold text-indigo-700 transition hover:bg-indigo-100"
-                  >
-                    /e/{event.slug}
-                  </a>
-                  <CopyButton text={`/e/${event.slug}`} addOrigin label="⧉ Copy link" />
-                </div>
-              )}
-            </div>
-            <PublishToggle eventId={event.id} status={event.status} size="lg" />
+            )}
           </div>
-          <div className="mt-5 border-t border-slate-100 pt-5">
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <QuickLinks slug={event.slug} status={event.status} />
+          </div>
+          <div className="mt-4 border-t border-slate-100 pt-4">
             <QuickNavButtons eventId={event.id} slug={event.slug} />
           </div>
         </Card>
@@ -196,8 +179,8 @@ export default async function ManageEventPage({ params }: { params: { id: string
             </section>
 
             <Card className="p-5">
-              <h2 className="font-bold text-slate-900">Judging criteria</h2>
-              <p className="mt-0.5 text-xs text-slate-400">Auto-created with the event.</p>
+              <CardTitle>Judging criteria</CardTitle>
+              <CardDescription>Auto-created with the event.</CardDescription>
               {criteria.length === 0 ? (
                 <p className="mt-3 text-sm text-slate-500">
                   No criteria yet —{' '}
@@ -229,17 +212,17 @@ export default async function ManageEventPage({ params }: { params: { id: string
             <section id="teams" className="scroll-mt-24">
               <Card className="p-5 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h2 className="text-lg font-bold text-slate-900">Teams & applications</h2>
+                  <div>
+                    <CardTitle>Teams & applications</CardTitle>
+                    <CardDescription>
+                      Approve pending registrations, or reject them. Pending teams stay invisible
+                      everywhere public until approved.
+                    </CardDescription>
+                  </div>
                   {pendingTeams > 0 && (
-                    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
-                      {pendingTeams} awaiting approval
-                    </span>
+                    <StatusPill status="pending" />
                   )}
                 </div>
-                <p className="mt-1 text-sm text-slate-500">
-                  Approve pending registrations, or reject them. Pending teams stay invisible
-                  everywhere public until approved.
-                </p>
                 <div className="mt-4">
                   <PendingApprovals eventId={event.id} />
                 </div>
@@ -253,15 +236,20 @@ export default async function ManageEventPage({ params }: { params: { id: string
             <section id="announcements" className="scroll-mt-24">
               {announcementCount === 0 ? (
                 <Card className="p-5 sm:p-6">
-                  <h2 className="text-lg font-bold text-slate-900">📢 Announcements</h2>
-                  <EmptyState
-                    icon="📢"
-                    title="No announcements yet"
-                    description="Post deadlines, reminders and winner announcements — they appear on the live screen within seconds."
-                    actionLabel="Go to announcements"
-                    actionHref={`/dashboard/events/${event.id}/announcements`}
-                    compact
-                  />
+                  <CardTitle>Announcements</CardTitle>
+                  <div className="mt-2">
+                    <EmptyState
+                      icon={<DsIcon name="megaphone" className="h-6 w-6" />}
+                      title="No announcements yet"
+                      description="Post deadlines, reminders and winner announcements — they appear on the live screen within seconds."
+                      action={
+                        <LinkButton href={`/dashboard/events/${event.id}/announcements`} variant="secondary">
+                          Go to announcements
+                        </LinkButton>
+                      }
+                      compact
+                    />
+                  </div>
                 </Card>
               ) : (
                 <AnnouncementsForm eventId={event.id} />
@@ -273,8 +261,8 @@ export default async function ManageEventPage({ params }: { params: { id: string
             </section>
 
             <Card className="p-5">
-              <h2 className="font-bold text-slate-900">Quick actions</h2>
-              <p className="mt-0.5 text-xs text-slate-400">Publish, close, duplicate or delete this event.</p>
+              <CardTitle>Quick actions</CardTitle>
+              <CardDescription>Publish, close, duplicate or delete this event.</CardDescription>
               <div className="mt-3">
                 <QuickActions eventId={event.id} status={event.status} slug={event.slug} eventName={event.name} />
               </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, Button, Field, inputClass, ErrorNote, SuccessNote } from '@/components/ui';
+import { DataTable, DsIcon, type DataTableColumn } from '@/components/design-system';
 
 interface Judge {
   id: string;
@@ -66,7 +67,7 @@ export default function JudgesSection({ eventId }: { eventId: string }) {
         return;
       }
       setJudges((j) => [...j, data.judge]);
-      setNotice(`Judge added ✓ — access code: ${data.judge.access_code}`);
+      setNotice(`Judge added — access code: ${data.judge.access_code}`);
       setName('');
       setEmail('');
     } catch {
@@ -104,12 +105,76 @@ export default function JudgesSection({ eventId }: { eventId: string }) {
     }
   }
 
+  const columns: DataTableColumn<Judge>[] = [
+    {
+      key: 'name',
+      header: 'Judge',
+      sortable: true,
+      value: (j) => `${j.name} ${j.email ?? ''}`.toLowerCase(),
+      render: (j) => (
+        <span>
+          <span className="block font-semibold text-[#111827]">{j.name}</span>
+          {j.email && <span className="block truncate text-xs text-slate-500">{j.email}</span>}
+        </span>
+      ),
+    },
+    {
+      key: 'code',
+      header: 'Access code',
+      render: (j) => (
+        <button
+          type="button"
+          onClick={() => copyCode(j)}
+          title="Copy access code"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 font-mono text-sm font-bold tracking-widest text-slate-800 transition hover:border-indigo-200 hover:bg-indigo-50"
+        >
+          {j.access_code}
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600">
+            <DsIcon name="copy" className="h-3 w-3" />
+            {copied === j.id ? 'Copied' : 'Copy'}
+          </span>
+        </button>
+      ),
+    },
+    {
+      key: 'added',
+      header: 'Added',
+      sortable: true,
+      value: (j) => j.created_at || '',
+      render: (j) => (
+        <span className="whitespace-nowrap text-xs text-slate-500">
+          {j.created_at
+            ? new Date(j.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      render: (j) => (
+        <button
+          type="button"
+          onClick={() => removeJudge(j)}
+          className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+        >
+          <DsIcon name="trash" className="h-3.5 w-3.5" />
+          Remove
+        </button>
+      ),
+    },
+  ];
+
   return (
-    <Card className="p-6">
+    <Card className="p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Judges</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+            <DsIcon name="scale" className="h-5 w-5 text-indigo-600" />
+            Judges
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
             Share each access code with its judge — they sign in at <span className="font-semibold">/judge/login</span>.
           </p>
         </div>
@@ -144,47 +209,22 @@ export default function JudgesSection({ eventId }: { eventId: string }) {
           />
         </Field>
         <Button type="submit" disabled={busy} className="sm:mb-[1px]">
-          {busy ? 'Adding…' : '+ Add judge'}
+          {busy ? 'Adding…' : <><DsIcon name="plus" className="h-4 w-4" /> Add judge</>}
         </Button>
       </form>
 
       <div className="mt-6">
         {loading ? (
           <p className="py-6 text-center text-sm text-slate-400">Loading judges…</p>
-        ) : judges.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
-            <p className="text-sm font-semibold text-slate-600">No judges yet</p>
-            <p className="mt-1 text-sm text-slate-500">Add your first judge above — their access code appears here.</p>
-          </div>
         ) : (
-          <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
-            {judges.map((j) => (
-              <li key={j.id} className="flex flex-wrap items-center gap-3 bg-white px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-slate-900">{j.name}</p>
-                  {j.email && <p className="truncate text-xs text-slate-500">{j.email}</p>}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => copyCode(j)}
-                  title="Copy access code"
-                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 font-mono text-sm font-bold tracking-widest text-slate-800 transition hover:border-indigo-200 hover:bg-indigo-50"
-                >
-                  {j.access_code}
-                  <span className="text-xs font-semibold text-indigo-600">
-                    {copied === j.id ? '✓ Copied' : '⧉ Copy'}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeJudge(j)}
-                  className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
+          <DataTable
+            columns={columns}
+            rows={judges}
+            searchable
+            searchPlaceholder="Search judges…"
+            emptyTitle="No judges yet"
+            emptyText="Add your first judge above — their access code appears here."
+          />
         )}
       </div>
     </Card>

@@ -2,7 +2,7 @@ import { redirect, notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
 import OrganizerShell from '@/components/OrganizerShell';
-import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { Breadcrumb, DsIcon } from '@/components/design-system';
 
 export const dynamic = 'force-dynamic';
 
@@ -161,22 +161,29 @@ export default async function AnalyticsPage({ params }: { params: { id: string }
 
   return (
     <OrganizerShell organizer={org} active="analytics" eventContext={{ id: event.id, slug: event.slug }} dark>
-      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 text-slate-100">
-        {/* header */}
-        <Breadcrumbs
-          items={[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: event.name, href: `/dashboard/events/${eventId}` },
-            { label: 'Analytics' },
-          ]}
-        />
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-extrabold tracking-tight text-white">
-            Mission Control <span className="text-slate-500">· {event.name}</span>
-          </h1>
-          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-400">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" /> LIVE
-          </span>
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-6 py-8 sm:px-8 text-slate-100">
+        {/* header — dark Mission Control variant, standardized spacing */}
+        <div className="mb-6">
+          <Breadcrumb
+            items={[
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: event.name, href: `/dashboard/events/${eventId}` },
+              { label: 'Analytics' },
+            ]}
+          />
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                Mission Control <span className="text-slate-500">· {event.name}</span>
+              </h1>
+              <p className="mt-1 text-sm text-slate-400">
+                Live stats across teams, projects, scores and check-ins.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-400">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" /> LIVE
+            </span>
+          </div>
         </div>
         {/* stat tiles */}
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -189,15 +196,15 @@ export default async function AnalyticsPage({ params }: { params: { id: string }
         {/* exports */}
         <section className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Export</span>
-          <a href={`/api/events/${eventId}/export/teams`} className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-indigo-500 hover:text-white">⬇ Teams CSV</a>
-          <a href={`/api/events/${eventId}/export/projects`} className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-indigo-500 hover:text-white">⬇ Projects CSV</a>
-          <a href={`/api/events/${eventId}/export/scores`} className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-indigo-500 hover:text-white">⬇ Scores matrix CSV</a>
+          <a href={`/api/events/${eventId}/export/teams`} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-indigo-500 hover:text-white"><DsIcon name="download" className="h-4 w-4" /> Teams CSV</a>
+          <a href={`/api/events/${eventId}/export/projects`} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-indigo-500 hover:text-white"><DsIcon name="download" className="h-4 w-4" /> Projects CSV</a>
+          <a href={`/api/events/${eventId}/export/scores`} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-indigo-500 hover:text-white"><DsIcon name="download" className="h-4 w-4" /> Scores matrix CSV</a>
         </section>
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* live activity */}
           <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-            <h2 className="font-bold text-white">⚡ Live activity</h2>
+            <h2 className="flex items-center gap-2 font-bold text-white"><DsIcon name="zap" className="h-4 w-4 text-amber-400" /> Live activity</h2>
             <p className="mt-0.5 text-xs text-slate-500">Latest 15 events across teams, projects, scores and check-ins.</p>
             {feed.length === 0 ? (
               <p className="py-8 text-center text-sm text-slate-500">Nothing yet — activity appears here in real time.</p>
@@ -218,7 +225,7 @@ export default async function AnalyticsPage({ params }: { params: { id: string }
 
           {/* funnel */}
           <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-            <h2 className="font-bold text-white">🔻 Submissions funnel</h2>
+            <h2 className="flex items-center gap-2 font-bold text-white"><DsIcon name="filter" className="h-4 w-4 text-indigo-400" /> Submissions funnel</h2>
             <p className="mt-0.5 text-xs text-slate-500">Conversion from registered teams to scored projects.</p>
             <div className="mt-5 space-y-5">
               {funnel.map((f) => (
@@ -270,7 +277,7 @@ export default async function AnalyticsPage({ params }: { params: { id: string }
         <div className="grid gap-6 lg:grid-cols-2">
           {/* team size distribution */}
           <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-            <h2 className="font-bold text-white">👥 Team size distribution</h2>
+            <h2 className="flex items-center gap-2 font-bold text-white"><DsIcon name="users" className="h-4 w-4 text-indigo-400" /> Team size distribution</h2>
             <p className="mt-0.5 text-xs text-slate-500">Members per approved team.</p>
             <div className="mt-5 flex h-36 items-end gap-3">
               {['1', '2', '3', '4', '5+'].map((label, i) => (
@@ -288,7 +295,7 @@ export default async function AnalyticsPage({ params }: { params: { id: string }
 
           {/* registrations over time */}
           <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-            <h2 className="font-bold text-white">📈 Registrations — last 14 days</h2>
+            <h2 className="flex items-center gap-2 font-bold text-white"><DsIcon name="chart" className="h-4 w-4 text-violet-400" /> Registrations — last 14 days</h2>
             <p className="mt-0.5 text-xs text-slate-500">Approved teams per day.</p>
             <div className="mt-5 flex h-36 items-end gap-1.5">
               {days.map((d) => (
@@ -309,7 +316,7 @@ export default async function AnalyticsPage({ params }: { params: { id: string }
 
         {/* judging progress per judge */}
         <section className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-          <h2 className="font-bold text-white">🧑‍⚖️ Judging progress</h2>
+          <h2 className="flex items-center gap-2 font-bold text-white"><DsIcon name="scale" className="h-4 w-4 text-emerald-400" /> Judging progress</h2>
           <p className="mt-0.5 text-xs text-slate-500">Projects scored per judge (of {projects} total).</p>
           {judgeProgress.length === 0 ? (
             <p className="py-8 text-center text-sm text-slate-500">No judges or scores yet.</p>

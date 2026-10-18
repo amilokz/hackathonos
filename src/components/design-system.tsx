@@ -78,7 +78,8 @@ type DsIconName =
   | 'checkCircle'
   | 'eye'
   | 'settings'
-  | 'pencil';
+  | 'pencil'
+  | 'zap';
 
 const DS_ICON_PATHS: Record<DsIconName, ReactNode> = {
   users: (
@@ -386,7 +387,9 @@ const DS_ICON_PATHS: Record<DsIconName, ReactNode> = {
       <path d="m15 5 4 4" />
     </>
   ),
-};
+  zap: (
+    <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+  ),
   x: (
     <>
       <path d="M18 6 6 18" />
