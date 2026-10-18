@@ -340,6 +340,21 @@ const DDL = `
     CREATE INDEX IF NOT EXISTS idx_mentors_event ON mentors(event_id);
     CREATE INDEX IF NOT EXISTS idx_mentor_slots_mentor ON mentor_slots(mentor_id);
     CREATE INDEX IF NOT EXISTS idx_mentor_bookings_team ON mentor_bookings(team_id);
+
+    -- Contact page submissions (organizer inbox; never exposed publicly).
+    -- read: 0 = unread, 1 = read.
+    CREATE TABLE IF NOT EXISTS contact_messages (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      subject TEXT DEFAULT '',
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      read INTEGER DEFAULT 0
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_contact_messages_created ON contact_messages(created_at);
+    CREATE INDEX IF NOT EXISTS idx_contact_messages_read ON contact_messages(read);
 `;
 
 /**

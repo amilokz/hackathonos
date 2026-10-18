@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import LogoutButton from '@/app/dashboard/LogoutButton';
 
-export type OrganizerNavKey = 'dashboard' | 'events' | 'new';
+export type OrganizerNavKey = 'dashboard' | 'events' | 'new' | 'messages';
 
 const LINKS: { key: OrganizerNavKey; href: string; icon: string; label: string; desc: string }[] = [
   { key: 'dashboard', href: '/dashboard', icon: '🏠', label: 'Dashboard', desc: 'Overview & stats' },
   { key: 'events', href: '/dashboard#events', icon: '📅', label: 'Events', desc: 'All your hackathons' },
   { key: 'new', href: '/dashboard/events/new', icon: '➕', label: 'New event', desc: 'Start a new hackathon' },
+  { key: 'messages', href: '/dashboard/messages', icon: '✉️', label: 'Messages', desc: 'Contact form inbox' },
 ];
 
 function NavLinks({ active, onNavigate }: { active: OrganizerNavKey; onNavigate?: () => void }) {

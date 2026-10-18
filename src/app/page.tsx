@@ -545,6 +545,8 @@ export default async function Home() {
             <a href="#features" className="transition hover:text-indigo-600">Features</a>
             <a href="#how" className="transition hover:text-indigo-600">How it works</a>
             <a href="/past" className="transition hover:text-indigo-600">Past hackathons</a>
+            <a href="/about" className="transition hover:text-indigo-600">About</a>
+            <a href="/contact" className="transition hover:text-indigo-600">Contact</a>
             <a href="#cta" className="transition hover:text-indigo-600">Get started</a>
           </nav>
           <div className="flex items-center gap-3">

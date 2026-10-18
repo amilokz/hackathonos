@@ -197,8 +197,9 @@ export function BrandFooter({
           <nav aria-label="Resources">
             <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Resources</p>
             <ul className="mt-4 space-y-2.5">
+              <FooterLink href="/about">About</FooterLink>
+              <FooterLink href="/contact">Contact</FooterLink>
               <FooterLink href="/#how">Help / FAQ</FooterLink>
-              <FooterLink href="mailto:info@akclnt.com">Contact</FooterLink>
               <FooterLink href="/verify/demo">Verify certificate</FooterLink>
             </ul>
           </nav>
