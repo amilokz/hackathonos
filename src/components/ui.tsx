@@ -200,7 +200,7 @@ export function BrandFooter({
               <FooterLink href="/about">About</FooterLink>
               <FooterLink href="/contact">Contact</FooterLink>
               <FooterLink href="/#how">Help / FAQ</FooterLink>
-              <FooterLink href="/verify/demo">Verify certificate</FooterLink>
+              <FooterLink href="/verify">Verify certificate</FooterLink>
             </ul>
           </nav>
 
