@@ -94,30 +94,30 @@ async function getDashboardStats(organizerId: string): Promise<DashboardStats> {
   const reg = await windowCount(
     `SELECT COUNT(*) AS c FROM teams t
      JOIN events e ON e.id = t.event_id
-     WHERE e.organizer_id = ? AND e.status = 'published' AND t.approval_status = 'approved' AND ${in30.replace('created_at', 't.created_at')}`,
+     WHERE e.organizer_id = ? AND e.status = 'published' AND t.approval_status = 'approved' AND ${in30.replaceAll('created_at', 't.created_at')}`,
     `SELECT COUNT(*) AS c FROM teams t
      JOIN events e ON e.id = t.event_id
-     WHERE e.organizer_id = ? AND e.status = 'published' AND t.approval_status = 'approved' AND ${prev30.replace('created_at', 't.created_at')}`,
+     WHERE e.organizer_id = ? AND e.status = 'published' AND t.approval_status = 'approved' AND ${prev30.replaceAll('created_at', 't.created_at')}`,
     organizerId,
   );
   const proj = await windowCount(
     `SELECT COUNT(*) AS c FROM projects p
      JOIN teams t ON t.id = p.team_id
      JOIN events e ON e.id = t.event_id
-     WHERE e.organizer_id = ? AND t.approval_status = 'approved' AND ${in30.replace('created_at', 'p.created_at')}`,
+     WHERE e.organizer_id = ? AND t.approval_status = 'approved' AND ${in30.replaceAll('created_at', 'p.created_at')}`,
     `SELECT COUNT(*) AS c FROM projects p
      JOIN teams t ON t.id = p.team_id
      JOIN events e ON e.id = t.event_id
-     WHERE e.organizer_id = ? AND t.approval_status = 'approved' AND ${prev30.replace('created_at', 'p.created_at')}`,
+     WHERE e.organizer_id = ? AND t.approval_status = 'approved' AND ${prev30.replaceAll('created_at', 'p.created_at')}`,
     organizerId,
   );
   const cert = await windowCount(
     `SELECT COUNT(*) AS c FROM certificates c
      JOIN events e ON e.id = c.event_id
-     WHERE e.organizer_id = ? AND ${in30.replace('created_at', 'c.created_at')}`,
+     WHERE e.organizer_id = ? AND ${in30.replaceAll('created_at', 'c.created_at')}`,
     `SELECT COUNT(*) AS c FROM certificates c
      JOIN events e ON e.id = c.event_id
-     WHERE e.organizer_id = ? AND ${prev30.replace('created_at', 'c.created_at')}`,
+     WHERE e.organizer_id = ? AND ${prev30.replaceAll('created_at', 'c.created_at')}`,
     organizerId,
   );
 
