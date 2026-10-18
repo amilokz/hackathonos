@@ -10,10 +10,15 @@ const UpdateEventSchema = z.object({
   slug: z.string().trim().min(2).max(140).optional(),
   description: z.string().trim().max(2000).optional(),
   logo_url: z.string().trim().max(500).optional(),
+  cover_url: z.string().trim().max(500).optional(),
   start_date: z.string().trim().max(30).optional(),
   end_date: z.string().trim().max(30).optional(),
   entry_fee: z.coerce.number().min(0).max(1000000).optional(),
   status: z.enum(['draft', 'published', 'closed']).optional(),
+  prizes: z.string().trim().max(4000).optional(),
+  schedule: z.string().trim().max(4000).optional(),
+  faq: z.string().trim().max(4000).optional(),
+  highlight_video_url: z.string().trim().max(500).optional(),
 });
 
 async function owned(req: NextRequest, id: string) {

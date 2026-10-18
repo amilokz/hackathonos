@@ -1,10 +1,41 @@
 import type { Metadata } from "next";
+import { getDb, migrate } from "@/lib/db";
 
 export const metadata: Metadata = {
   title: "HackathonOS — Run Hackathons End to End",
   description:
     "The free operating system for hackathons: registrations, team management, project submissions, AI-assisted judging, live leaderboards, and verifiable certificates.",
 };
+
+export const dynamic = "force-dynamic";
+
+function formatDate(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso + "T00:00:00");
+  return isNaN(d.getTime())
+    ? iso
+    : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+async function getPastEvents() {
+  await migrate();
+  const db = getDb();
+  return (await db
+    .prepare(
+      `SELECT e.*, (SELECT COUNT(*) FROM teams t WHERE t.event_id = e.id) AS team_count
+       FROM events e WHERE e.status = 'closed'
+       ORDER BY e.end_date DESC, e.created_at DESC LIMIT 3`
+    )
+    .all()) as Array<{
+    id: string;
+    name: string;
+    slug: string;
+    cover_url: string;
+    start_date: string;
+    end_date: string;
+    team_count: number;
+  }>;
+}
 
 const FEATURES = [
   {
@@ -163,7 +194,78 @@ function MockDashboard() {
   );
 }
 
-export default function Home() {
+function PastHackathons({ events }: { events: Awaited<ReturnType<typeof getPastEvents>> }) {
+  return (
+    <section id="past" className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
+      <p className="text-center text-sm font-bold uppercase tracking-widest text-indigo-600">Hall of fame</p>
+      <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">
+        Hackathons powered by HackathonOS
+      </h2>
+      <p className="mx-auto mt-4 max-w-xl text-center text-slate-600">
+        Real events, real teams, real winners. Yours could be next.
+      </p>
+
+      {events.length === 0 ? (
+        <div className="mx-auto mt-10 max-w-2xl rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 p-10 text-center">
+          <p className="text-4xl">🏁</p>
+          <p className="mt-3 font-bold text-slate-800">The first story hasn&apos;t been written yet</p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+            Past hackathons will be showcased here once events wrap up. Run yours and claim this spot.
+          </p>
+          <a
+            href="/register"
+            className="mt-5 inline-block rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          >
+            Run your hackathon
+          </a>
+        </div>
+      ) : (
+        <>
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {events.map((e) => {
+              const dates = [formatDate(e.start_date), formatDate(e.end_date)].filter(Boolean).join(" → ");
+              return (
+                <a
+                  key={e.id}
+                  href="/past"
+                  className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                >
+                  {e.cover_url?.trim() ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={e.cover_url} alt={`${e.name} cover`} className="h-40 w-full object-cover" />
+                  ) : (
+                    <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-indigo-100 via-violet-100 to-sky-100">
+                      <span className="text-4xl">🏆</span>
+                    </div>
+                  )}
+                  <div className="p-5">
+                    <h3 className="font-bold text-slate-900 transition group-hover:text-indigo-700">{e.name}</h3>
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                      {dates && (
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">📅 {dates}</span>
+                      )}
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">
+                        👥 {e.team_count} teams
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+          <div className="mt-8 text-center">
+            <a href="/past" className="text-sm font-semibold text-indigo-600 transition hover:text-indigo-800">
+              View all past hackathons →
+            </a>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+export default async function Home() {
+  const pastEvents = await getPastEvents();
   return (
     <main className="min-h-screen bg-white text-slate-900">
       {/* Nav */}
@@ -175,6 +277,7 @@ export default function Home() {
           <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
             <a href="#features" className="transition hover:text-indigo-600">Features</a>
             <a href="#how" className="transition hover:text-indigo-600">How it works</a>
+            <a href="/past" className="transition hover:text-indigo-600">Past hackathons</a>
             <a href="#cta" className="transition hover:text-indigo-600">Get started</a>
           </nav>
           <div className="flex items-center gap-3">
@@ -301,6 +404,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Past hackathons preview */}
+      <PastHackathons events={pastEvents} />
 
       {/* CTA */}
       <section id="cta" className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">

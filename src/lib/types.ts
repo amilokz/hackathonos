@@ -12,10 +12,20 @@ export interface EventRow {
   slug: string;
   description: string;
   logo_url: string;
+  cover_url: string;
   start_date: string;
   end_date: string;
   entry_fee: number;
   status: string;
+  prizes: string;
+  schedule: string;
+  faq: string;
+  highlight_video_url: string;
+  // Phase-C monetization columns (added via ensureSettingsColumns(); may be
+  // absent on very old rows — always read defensively).
+  payment_instructions?: string | null;
+  white_label?: number | null;
+  custom_footer_text?: string | null;
   created_at: string;
 }
 

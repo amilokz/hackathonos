@@ -19,9 +19,14 @@ const CreateEventSchema = z.object({
   name: z.string().trim().min(2).max(120),
   description: z.string().trim().max(2000).default(''),
   logo_url: z.string().trim().max(500).default(''),
+  cover_url: z.string().trim().max(500).default(''),
   start_date: z.string().trim().max(30).default(''),
   end_date: z.string().trim().max(30).default(''),
   entry_fee: z.coerce.number().min(0).max(1000000).default(0),
+  prizes: z.string().trim().max(4000).default(''),
+  schedule: z.string().trim().max(4000).default(''),
+  faq: z.string().trim().max(4000).default(''),
+  highlight_video_url: z.string().trim().max(500).default(''),
 });
 
 /** List the signed-in organizer's events. */
@@ -61,8 +66,8 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString();
   await db
     .prepare(
-      `INSERT INTO events (id, organizer_id, name, slug, description, logo_url, start_date, end_date, entry_fee, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
+      `INSERT INTO events (id, organizer_id, name, slug, description, logo_url, cover_url, start_date, end_date, entry_fee, prizes, schedule, faq, highlight_video_url, status, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
     )
     .run(
       id,
@@ -71,9 +76,14 @@ export async function POST(req: NextRequest) {
       slug,
       parsed.data.description,
       parsed.data.logo_url,
+      parsed.data.cover_url,
       parsed.data.start_date,
       parsed.data.end_date,
       parsed.data.entry_fee,
+      parsed.data.prizes,
+      parsed.data.schedule,
+      parsed.data.faq,
+      parsed.data.highlight_video_url,
       now,
     );
 

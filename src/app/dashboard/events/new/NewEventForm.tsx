@@ -13,6 +13,7 @@ export default function NewEventForm() {
     name: '',
     description: '',
     logo_url: '',
+    cover_url: '',
     start_date: '',
     end_date: '',
     entry_fee: '0',
@@ -25,6 +26,10 @@ export default function NewEventForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (form.start_date && form.end_date && form.end_date < form.start_date) {
+      setError('End date must be on or after the start date.');
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch('/api/events', {
@@ -68,6 +73,11 @@ export default function NewEventForm() {
           <Field label="Logo (optional)">
             <ImageUpload value={form.logo_url} onChange={(url) => set('logo_url', url)} />
           </Field>
+          <Field label="Cover banner (optional)" hint="Wide banner for the public page. You can also add it later from the event settings.">
+            <ImageUpload value={form.cover_url} onChange={(url) => set('cover_url', url)} placeholder="https://…/cover.jpg" />
+          </Field>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Entry fee (0 = free)" hint="In your local currency.">
             <input type="number" min={0} step="any" value={form.entry_fee} onChange={(e) => set('entry_fee', e.target.value)} className={inputClass} />
           </Field>

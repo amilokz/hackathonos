@@ -199,6 +199,33 @@ const DDL = `
 `;
 
 /**
+ * Adds columns to the events table that were introduced after the initial
+ * CREATE TABLE. Production tables already exist, so CREATE TABLE IF NOT
+ * EXISTS never applies them — each ALTER is retried blindly and the
+ * "duplicate column" error is swallowed, making this idempotent and safe
+ * to run on every boot (works on both local SQLite and remote Turso,
+ * where PRAGMA introspection is unreliable).
+ */
+const EVENT_COLUMN_ADDITIONS = [
+  "ALTER TABLE events ADD COLUMN cover_url TEXT DEFAULT ''",
+  "ALTER TABLE events ADD COLUMN prizes TEXT DEFAULT ''",
+  "ALTER TABLE events ADD COLUMN schedule TEXT DEFAULT ''",
+  "ALTER TABLE events ADD COLUMN faq TEXT DEFAULT ''",
+  "ALTER TABLE events ADD COLUMN highlight_video_url TEXT DEFAULT ''",
+];
+
+async function ensureEventColumns(): Promise<void> {
+  const db = getDb();
+  for (const alter of EVENT_COLUMN_ADDITIONS) {
+    try {
+      await db.exec(alter);
+    } catch (e) {
+      if (!/duplicate column/i.test(String((e as Error)?.message ?? e))) throw e;
+    }
+  }
+}
+
+/**
  * Creates all HackathonOS tables if they do not exist.
  * Safe to call on every boot — pure DDL, no data changes.
  */
@@ -206,4 +233,5 @@ export async function migrate(): Promise<void> {
   const db = getDb();
   await db.exec('PRAGMA foreign_keys = ON');
   await db.exec(DDL);
+  await ensureEventColumns();
 }

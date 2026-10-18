@@ -16,10 +16,15 @@ export default function EventForm({ event }: { event: EventRow }) {
     slug: event.slug,
     description: event.description,
     logo_url: event.logo_url,
+    cover_url: event.cover_url ?? '',
     start_date: event.start_date,
     end_date: event.end_date,
     entry_fee: String(event.entry_fee),
     status: event.status,
+    prizes: event.prizes ?? '',
+    schedule: event.schedule ?? '',
+    faq: event.faq ?? '',
+    highlight_video_url: event.highlight_video_url ?? '',
   });
 
   function set(key: keyof typeof form, value: string) {
@@ -31,6 +36,10 @@ export default function EventForm({ event }: { event: EventRow }) {
     e.preventDefault();
     setError(null);
     setSaved(null);
+    if (form.start_date && form.end_date && form.end_date < form.start_date) {
+      setError('End date must be on or after the start date.');
+      return;
+    }
     setBusy(true);
     try {
       const res = await fetch(`/api/events/${event.id}`, {
@@ -66,6 +75,21 @@ export default function EventForm({ event }: { event: EventRow }) {
         <Field label="Description">
           <textarea value={form.description} onChange={(e) => set('description', e.target.value)} className={`${inputClass} min-h-24`} />
         </Field>
+        <Field label="Cover banner" hint="Wide banner shown on the public event page (16:9 works best).">
+          <ImageUpload value={form.cover_url} onChange={(url) => set('cover_url', url)} placeholder="https://…/cover.jpg" />
+        </Field>
+        <Field label="🏆 Prizes" hint="One per line, e.g. “1st — PKR 100,000 + trophy”. Shown in the Prizes section.">
+          <textarea value={form.prizes} onChange={(e) => set('prizes', e.target.value)} className={`${inputClass} min-h-20`} placeholder="1st place — PKR 100,000 + trophy&#10;2nd place — PKR 50,000&#10;Best UI — PKR 10,000" />
+        </Field>
+        <Field label="🗓️ Schedule / agenda" hint="One per line, e.g. “Day 1, 09:00 — Check-in & opening”.">
+          <textarea value={form.schedule} onChange={(e) => set('schedule', e.target.value)} className={`${inputClass} min-h-20`} placeholder="Day 1, 09:00 — Check-in & opening ceremony&#10;Day 1, 10:00 — Hacking begins" />
+        </Field>
+        <Field label="❓ FAQ" hint="Format: Question? on one line, answer on the next. Blank line between entries.">
+          <textarea value={form.faq} onChange={(e) => set('faq', e.target.value)} className={`${inputClass} min-h-20`} placeholder="Who can join?&#10;Anyone — students, developers, designers.&#10;&#10;Is there a fee?&#10;No, entry is free." />
+        </Field>
+        <Field label="🎬 Highlight video (YouTube)" hint="YouTube link (watch or youtu.be). Shown as an embedded player on the public page.">
+          <input value={form.highlight_video_url} onChange={(e) => set('highlight_video_url', e.target.value)} className={inputClass} placeholder="https://www.youtube.com/watch?v=…" />
+        </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Start date">
             <input type="date" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} className={inputClass} />
@@ -82,7 +106,7 @@ export default function EventForm({ event }: { event: EventRow }) {
             <input type="number" min={0} step="any" value={form.entry_fee} onChange={(e) => set('entry_fee', e.target.value)} className={inputClass} />
           </Field>
         </div>
-        <Field label="Status" hint="Only published events accept registrations and show a public page.">
+        <Field label="Status" hint="Published events accept registrations. Closed events keep a public page with the final results.">
           <select value={form.status} onChange={(e) => set('status', e.target.value)} className={inputClass}>
             <option value="draft">Draft</option>
             <option value="published">Published</option>
