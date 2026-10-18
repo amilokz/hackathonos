@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { requireOrganizer, getOwnedEvent } from '@/lib/require-organizer';
 import { migrate } from '@/lib/db';
-import { Container, PageHeader, TopNav, LinkButton } from '@/components/ui';
+import { Container, PageHeader, TopNav, LinkButton, Breadcrumb } from '@/components/ui';
 import LogoutButton from '../../../LogoutButton';
 import SettingsClient from './SettingsClient';
 
@@ -18,6 +18,13 @@ export default async function SettingsPage({ params }: { params: { id: string } 
     <div className="min-h-screen bg-slate-50">
       <TopNav title={organizer.name} right={<LogoutButton />} />
       <Container className="max-w-3xl py-10">
+        <Breadcrumb
+          items={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: event.name, href: `/dashboard/events/${params.id}` },
+            { label: 'Settings' },
+          ]}
+        />
         <PageHeader
           title="Event settings"
           subtitle={`${event.name} · entry fees, payments and white-label branding`}

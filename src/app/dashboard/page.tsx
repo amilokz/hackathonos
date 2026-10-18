@@ -3,6 +3,7 @@ import { getDb, migrate } from '@/lib/db';
 import { requireOrganizer } from '@/lib/require-organizer';
 import { Container, Card, PageHeader, LinkButton, TopNav } from '@/components/ui';
 import LogoutButton from './LogoutButton';
+import PublishToggle from '@/components/PublishToggle';
 import type { EventRow } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -41,15 +42,19 @@ export default async function DashboardPage() {
         />
 
         {events.length === 0 ? (
-          <Card className="p-10 text-center">
-            <p className="text-lg font-semibold text-slate-900">No events yet</p>
-            <p className="mt-1 text-sm text-slate-500">Create your first hackathon and share the public link with participants.</p>
-            <div className="mt-5">
-              <LinkButton href="/dashboard/events/new">Create your first event</LinkButton>
+          <Card className="p-10 text-center sm:p-14">
+            <p className="text-5xl" role="img" aria-label="Rocket">🚀</p>
+            <p className="mt-4 text-lg font-semibold text-slate-900">No events yet</p>
+            <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
+              Create your first hackathon and share the public link with participants.
+              Registrations, project submissions and judging are all handled for you.
+            </p>
+            <div className="mt-6">
+              <LinkButton href="/dashboard/events/new">+ Create your first event</LinkButton>
             </div>
           </Card>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {events.map((e) => {
               const c = counts.get(e.id) ?? { teams: 0, projects: 0 };
               return (
@@ -67,11 +72,12 @@ export default async function DashboardPage() {
                     <span><strong className="text-slate-900">{c.teams}</strong> teams</span>
                     <span><strong className="text-slate-900">{c.projects}</strong> projects</span>
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
                     <LinkButton href={`/dashboard/events/${e.id}`} variant="secondary">Manage</LinkButton>
-                    {e.status === 'published' && (
+                    <PublishToggle eventId={e.id} status={e.status} size="sm" />
+                    {e.status === 'published' || e.status === 'closed' ? (
                       <LinkButton href={`/e/${e.slug}`} variant="secondary">View public page</LinkButton>
-                    )}
+                    ) : null}
                   </div>
                 </Card>
               );

@@ -33,7 +33,15 @@ export async function POST(req: NextRequest) {
     | undefined;
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
   if (event.status !== 'published') {
-    return NextResponse.json({ error: 'Registrations are not open for this event yet' }, { status: 403 });
+    const closed = event.status === 'closed';
+    return NextResponse.json(
+      {
+        error: closed
+          ? 'Registrations are closed — this hackathon has ended'
+          : 'Registrations are not open for this event yet',
+      },
+      { status: 403 },
+    );
   }
 
   const clash = await db

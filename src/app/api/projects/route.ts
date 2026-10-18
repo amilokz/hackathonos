@@ -41,7 +41,15 @@ export async function POST(req: NextRequest) {
     | { status: string }
     | undefined;
   if (!event || event.status !== 'published') {
-    return NextResponse.json({ error: 'Submissions are not open for this event' }, { status: 403 });
+    const closed = event?.status === 'closed';
+    return NextResponse.json(
+      {
+        error: closed
+          ? 'Submissions are closed — this hackathon has ended'
+          : 'Submissions are not open for this event',
+      },
+      { status: 403 },
+    );
   }
 
   const existing = await db.prepare('SELECT id FROM projects WHERE team_id = ?').get(data.teamId) as

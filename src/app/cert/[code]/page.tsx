@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import QRCode from 'qrcode';
 import { getDb, migrate } from '@/lib/db';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
+import { formatLongDate } from '@/lib/format';
 import PrintButton from './PrintButton';
 
 export const dynamic = 'force-dynamic';
@@ -58,14 +59,20 @@ export default async function CertificatePage({ params }: { params: { code: stri
   if (!cert) notFound();
 
   const verifyUrl = `${getBaseUrl()}/verify/${cert.verification_code}`;
-  const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 160 });
-  const dateStr = new Date(cert.created_at).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  // QR generation must never break the certificate page — fall back to a
+  // plain verification link if the qrcode library throws.
+  let qrDataUrl: string | null = null;
+  try {
+    qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 160 });
+  } catch {
+    qrDataUrl = null;
+  }
+  const dateStr = formatLongDate(cert.created_at) || '—';
   const title = TYPE_LABELS[cert.type] ?? 'Certificate';
-  const footer = cert.white_label && cert.custom_footer_text ? cert.custom_footer_text : null;
+  // White-label: custom footer text when set, otherwise no branding at all.
+  const footer = cert.white_label
+    ? (cert.custom_footer_text?.trim() ?? '')
+    : 'Powered by HackathonOS · Built by AKCLNT';
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 sm:p-8 print:bg-white print:p-0">
@@ -107,16 +114,24 @@ export default async function CertificatePage({ params }: { params: { code: stri
               <p className="mt-1 font-medium text-slate-800">{cert.organizer_name}</p>
             </div>
             <div className="text-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={qrDataUrl} alt="Verify certificate" className="h-28 w-28" />
+              {qrDataUrl ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={qrDataUrl} alt="Verify certificate" className="h-28 w-28" />
+                  <p className="mt-1 text-[10px] text-slate-400">Scan to verify</p>
+                </>
+              ) : (
+                <a href={verifyUrl} className="text-xs font-semibold text-indigo-600 underline">
+                  Verify online →
+                </a>
+              )}
               <p className="mt-1 font-mono text-[10px] text-slate-500">{cert.verification_code}</p>
-              <p className="text-[10px] text-slate-400">Scan to verify</p>
             </div>
           </div>
         </div>
-        <p className="mt-4 text-center text-[11px] text-slate-400">
-          {footer ?? 'Powered by HackathonOS · Built by AKCLNT'}
-        </p>
+        {footer ? (
+          <p className="mt-4 text-center text-[11px] text-slate-400">{footer}</p>
+        ) : null}
       </div>
     </div>
   );

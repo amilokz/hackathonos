@@ -92,7 +92,9 @@ export default function RegisterForm({ eventId, eventSlug }: { eventId: string; 
           <input type="email" required value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} className={inputClass} placeholder="you@example.com" />
         </Field>
         <div>
-          <span className="mb-1 block text-sm font-medium text-slate-700">Team members</span>
+          <span className="mb-1 block text-sm font-medium text-slate-700">
+            Team members <span className="font-normal text-slate-400">({members.length}/10)</span>
+          </span>
           <div className="space-y-2">
             {members.map((m, i) => (
               <div key={i} className="flex gap-2">
@@ -103,8 +105,10 @@ export default function RegisterForm({ eventId, eventSlug }: { eventId: string; 
               </div>
             ))}
           </div>
-          {members.length < 10 && (
+          {members.length < 10 ? (
             <button type="button" onClick={addMember} className="mt-2 text-sm font-semibold text-indigo-600 hover:underline">+ Add member</button>
+          ) : (
+            <p className="mt-2 text-xs text-slate-400">Maximum 10 members per team.</p>
           )}
         </div>
         <Button type="submit" disabled={busy} className="w-full">

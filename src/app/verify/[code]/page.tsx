@@ -1,16 +1,20 @@
 import { getDb, migrate } from '@/lib/db';
+import { ensureSettingsColumns } from '@/lib/settings-columns';
+import { formatLongDate } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
 export default async function VerifyPage({ params }: { params: { code: string } }) {
   await migrate();
+  await ensureSettingsColumns();
   const code = params.code.trim().toUpperCase();
 
   const db = getDb();
   const cert = await db
     .prepare(
       `SELECT c.recipient_name, c.type, c.created_at, c.verification_code,
-              e.name AS event_name, o.name AS organizer_name
+              e.name AS event_name, o.name AS organizer_name,
+              e.white_label, e.custom_footer_text
        FROM certificates c
        JOIN events e ON e.id = c.event_id
        JOIN organizers o ON o.id = e.organizer_id
@@ -24,6 +28,8 @@ export default async function VerifyPage({ params }: { params: { code: string } 
         verification_code: string;
         event_name: string;
         organizer_name: string;
+        white_label: number | null;
+        custom_footer_text: string | null;
       }
     | undefined;
 
@@ -57,11 +63,7 @@ export default async function VerifyPage({ params }: { params: { code: string } 
               <div className="flex justify-between gap-4">
                 <dt className="text-slate-500">Issued</dt>
                 <dd className="font-medium text-slate-900">
-                  {new Date(cert.created_at).toLocaleDateString('en-GB', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}
+                  {formatLongDate(cert.created_at) || '—'}
                 </dd>
               </div>
             </dl>
@@ -79,7 +81,11 @@ export default async function VerifyPage({ params }: { params: { code: string } 
             </p>
           </>
         )}
-        <p className="mt-8 text-[11px] text-slate-400">Powered by HackathonOS · Built by AKCLNT</p>
+        {cert?.white_label && cert.custom_footer_text?.trim() ? (
+          <p className="mt-8 text-[11px] text-slate-400">{cert.custom_footer_text}</p>
+        ) : !cert?.white_label ? (
+          <p className="mt-8 text-[11px] text-slate-400">Powered by HackathonOS · Built by AKCLNT</p>
+        ) : null}
       </div>
     </div>
   );

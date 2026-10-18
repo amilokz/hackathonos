@@ -20,6 +20,9 @@ function medal(rank: number) {
 
 export default function Leaderboard({ slug }: { slug: string }) {
   const [eventName, setEventName] = useState('');
+  const [isClosed, setIsClosed] = useState(false);
+  const [whiteLabel, setWhiteLabel] = useState(false);
+  const [footerText, setFooterText] = useState('');
   const [results, setResults] = useState<Entry[]>([]);
   const [updatedAt, setUpdatedAt] = useState('');
   const [error, setError] = useState('');
@@ -30,6 +33,9 @@ export default function Leaderboard({ slug }: { slug: string }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load leaderboard');
       setEventName(data.event.name);
+      setIsClosed(data.event.status === 'closed');
+      setWhiteLabel(Boolean(data.event.white_label));
+      setFooterText((data.event.custom_footer_text ?? '').trim());
       setResults(data.results);
       setUpdatedAt(data.updated_at);
       setError('');
@@ -47,10 +53,16 @@ export default function Leaderboard({ slug }: { slug: string }) {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       <header className="border-b border-slate-200 bg-white px-4 pb-8 pt-12 text-center">
-        <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-indigo-700">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
-          Live leaderboard
-        </p>
+        {isClosed ? (
+          <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-700">
+            🏁 Final results
+          </p>
+        ) : (
+          <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-indigo-700">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
+            Live leaderboard
+          </p>
+        )}
         <h1 className="mx-auto max-w-3xl text-4xl font-extrabold tracking-tight md:text-5xl">
           {eventName || '…'}
         </h1>
@@ -116,12 +128,20 @@ export default function Leaderboard({ slug }: { slug: string }) {
         </div>
       </main>
 
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-sm text-slate-400">
-        Powered by <span className="font-semibold text-slate-600">HackathonOS</span> · Built by{' '}
-        <a href="https://akclnt.com" className="font-semibold text-indigo-600 hover:underline">
-          AKCLNT
-        </a>
-      </footer>
+      {whiteLabel ? (
+        footerText ? (
+          <footer className="border-t border-slate-200 bg-white py-6 text-center text-sm text-slate-400">
+            {footerText}
+          </footer>
+        ) : null
+      ) : (
+        <footer className="border-t border-slate-200 bg-white py-6 text-center text-sm text-slate-400">
+          Powered by <span className="font-semibold text-slate-600">HackathonOS</span> · Built by{' '}
+          <a href="https://akclnt.com" className="font-semibold text-indigo-600 hover:underline">
+            AKCLNT
+          </a>
+        </footer>
+      )}
     </div>
   );
 }

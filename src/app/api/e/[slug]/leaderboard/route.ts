@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { ensureSettingsColumns } from '@/lib/settings-columns';
 import { computeResults } from '@/app/api/events/[id]/results/route';
 
 /**
@@ -10,9 +11,10 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { slug: string } }
 ) {
-  const event = await getDb().prepare('SELECT id, name, slug, description, status FROM events WHERE slug = ?').get(
+  await ensureSettingsColumns();
+  const event = await getDb().prepare('SELECT id, name, slug, description, status, white_label, custom_footer_text FROM events WHERE slug = ?').get(
     params.slug
-  ) as { id: string; name: string; slug: string; description: string; status: string } | undefined;
+  ) as { id: string; name: string; slug: string; description: string; status: string; white_label: number | null; custom_footer_text: string | null } | undefined;
 
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
 
@@ -27,7 +29,14 @@ export async function GET(
 
   return NextResponse.json(
     {
-      event: { name: event.name, slug: event.slug, description: event.description, status: event.status },
+      event: {
+        name: event.name,
+        slug: event.slug,
+        description: event.description,
+        status: event.status,
+        white_label: Boolean(event.white_label),
+        custom_footer_text: event.custom_footer_text ?? '',
+      },
       results,
       updated_at: new Date().toISOString(),
     },
