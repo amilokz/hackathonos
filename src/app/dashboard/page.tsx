@@ -5,6 +5,7 @@ import OrganizerShell from '@/components/OrganizerShell';
 import EmptyState from '@/components/EmptyState';
 import { Container, Card, PageHeader, LinkButton } from '@/components/ui';
 import SeedDemoButton from './SeedDemoButton';
+import InviteCodes from '@/components/InviteCodes';
 import type { EventRow } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -287,6 +288,11 @@ export default async function DashboardPage() {
               </a>
             </div>
           )}
+        </section>
+
+        {/* Organizer invite codes (security) */}
+        <section aria-label="Invite codes" className="mt-8">
+          <InviteCodes />
         </section>
       </Container>
     </OrganizerShell>

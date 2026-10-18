@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb, migrate } from '@/lib/db';
-import { requireOrganizerFromRequest } from '@/lib/auth';
+import { requireOrganizerFromRequest } from '@/lib/require-organizer';
 
 function genCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
