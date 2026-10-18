@@ -271,7 +271,7 @@ function SidebarBody({
 }) {
   const initial = (name || email || '?').trim().charAt(0).toUpperCase();
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex min-h-full flex-col">
       {/* Brand */}
       <div className="mb-6 flex items-center gap-2 px-1">
         <span className="text-lg font-extrabold tracking-tight text-white">
