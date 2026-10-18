@@ -41,6 +41,9 @@ export interface TeamRow {
   members_json: string;
   approval_status?: string;
   checkin_code?: string;
+  looking_for?: string | null;
+  is_open?: number | null;
+  invite_code?: string | null;
   created_at: string;
 }
 

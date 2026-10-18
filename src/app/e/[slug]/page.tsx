@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
+import { ensureAnnouncementColumns, type AnnouncementRow } from '@/lib/announcement-columns';
+import AnnouncementBadge from '@/components/AnnouncementBadge';
 import { computeResults } from '@/lib/results';
 import { Container, Card, LinkButton, BrandFooter } from '@/components/ui';
 import { toYouTubeEmbed } from '@/lib/youtube';
@@ -39,6 +41,7 @@ function SectionTitle({ emoji, title }: { emoji: string; title: string }) {
 export default async function PublicEventPage({ params }: { params: { slug: string } }) {
   await migrate();
   await ensureSettingsColumns();
+  await ensureAnnouncementColumns();
   const db = getDb();
   const event = await db.prepare('SELECT * FROM events WHERE slug = ?').get(params.slug) as EventRow | undefined;
   // Closed events stay publicly visible (with an "ended" banner); only drafts are hidden.
@@ -63,6 +66,13 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
     ? (await computeResults(event.id)).filter((r) => r.human_total !== null).slice(0, 3)
     : [];
 
+  // Latest 3 announcements, pinned first.
+  const announcements = (await db
+    .prepare(
+      'SELECT id, title, message, type, pinned, created_at FROM announcements WHERE event_id = ? ORDER BY pinned DESC, created_at DESC, rowid DESC LIMIT 3'
+    )
+    .all(event.id)) as AnnouncementRow[];
+
   const badges = (
     <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-sm">
       {dates && <span className="rounded-full bg-white px-3 py-1.5 font-medium text-slate-600 shadow-sm">📅 {dates}</span>}
@@ -80,6 +90,7 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
       {!isClosed && (
         <>
           <LinkButton href={`/e/${event.slug}/register`}>Register your team</LinkButton>
+          <LinkButton href={`/e/${event.slug}/teams`} variant="secondary">🔍 Find a team</LinkButton>
           <LinkButton href={`/e/${event.slug}/submit`} variant="secondary">Submit project</LinkButton>
         </>
       )}
@@ -98,6 +109,42 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
         </a>
       </Container>
     </div>
+  );
+
+  const announcementsSection = announcements.length > 0 && (
+    <section>
+      <SectionTitle emoji="📢" title="Announcements" />
+      <Card className="mt-3 divide-y divide-slate-100 p-0">
+        {announcements.map((a) => (
+          <div key={a.id} className="px-5 py-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {a.pinned === 1 && (
+                <span className="text-sm" aria-label="Pinned">
+                  📌
+                </span>
+              )}
+              <AnnouncementBadge type={a.type} />
+              <span className="text-xs text-slate-400">
+                {new Date(a.created_at).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </span>
+            </div>
+            {a.title && <p className="mt-1.5 font-bold text-slate-900">{a.title}</p>}
+            <p className="mt-0.5 text-sm leading-relaxed text-slate-600">{a.message}</p>
+          </div>
+        ))}
+      </Card>
+      <p className="mt-3 text-center text-sm">
+        <a
+          href={`/e/${event.slug}/announcements`}
+          className="font-semibold text-indigo-600 hover:underline"
+        >
+          View all announcements →
+        </a>
+      </p>
+    </section>
   );
 
   const winnersSection = winners.length > 0 && (
@@ -172,6 +219,7 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
       <Container className="pb-4">
         <div className="mx-auto max-w-3xl space-y-8">
           {winnersSection}
+          {announcementsSection}
 
           {event.description && (
             <section>

@@ -1,66 +1,189 @@
 import { redirect } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
 import { requireOrganizer } from '@/lib/require-organizer';
-import { Container, Card, PageHeader, LinkButton, TopNav } from '@/components/ui';
-import LogoutButton from './LogoutButton';
-import QuickActions from '@/components/QuickActions';
+import OrganizerShell from '@/components/OrganizerShell';
+import EmptyState from '@/components/EmptyState';
+import { Container, Card, PageHeader, LinkButton } from '@/components/ui';
 import SeedDemoButton from './SeedDemoButton';
 import type { EventRow } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
 const STATUS_STYLES: Record<string, string> = {
-  draft: 'bg-slate-100 text-slate-600',
+  draft: 'bg-amber-100 text-amber-800',
   published: 'bg-emerald-100 text-emerald-700',
-  closed: 'bg-amber-100 text-amber-700',
+  closed: 'bg-slate-200 text-slate-600',
 };
 
-interface EventStats {
+interface DashboardStats {
+  totalEvents: number;
+  activeRegistrations: number;
+  projectsSubmitted: number;
+  certificatesIssued: number;
+}
+
+interface EventCardStats {
   approvedTeams: number;
   pendingTeams: number;
   projects: number;
-  judgingPct: number;
-  judges: number;
 }
 
-async function getStats(eventId: string): Promise<EventStats> {
+async function getDashboardStats(organizerId: string): Promise<DashboardStats> {
   const db = getDb();
-  const approvedTeams = (await db
-    .prepare("SELECT COUNT(*) AS c FROM teams WHERE event_id = ? AND approval_status = 'approved'")
-    .get(eventId) as { c: number }).c;
-  const pendingTeams = (await db
-    .prepare("SELECT COUNT(*) AS c FROM teams WHERE event_id = ? AND approval_status = 'pending'")
-    .get(eventId) as { c: number }).c;
-  const projects = (await db
-    .prepare("SELECT COUNT(*) AS c FROM projects WHERE team_id IN (SELECT id FROM teams WHERE event_id = ? AND approval_status = 'approved')")
-    .get(eventId) as { c: number }).c;
-
-  const judgeRows = (await db
-    .prepare('SELECT COUNT(*) AS c FROM judges WHERE event_id = ?')
-    .get(eventId) as { c: number }).c;
-  const distinctScorers = (await db
-    .prepare(
-      `SELECT COUNT(DISTINCT s.judge_name) AS c FROM scores s
-       JOIN projects p ON p.id = s.project_id
-       JOIN teams t ON t.id = p.team_id
-       WHERE t.event_id = ? AND t.approval_status = 'approved'`,
-    )
-    .get(eventId) as { c: number }).c;
-  const judges = Math.max(judgeRows, distinctScorers);
-
-  const completed = (await db
-    .prepare(
-      `SELECT COUNT(*) AS c FROM (
-         SELECT DISTINCT s.project_id, s.judge_name FROM scores s
-         JOIN projects p ON p.id = s.project_id
+  const totalEvents = (
+    (await db
+      .prepare('SELECT COUNT(*) AS c FROM events WHERE organizer_id = ?')
+      .get(organizerId)) as { c: number }
+  ).c;
+  const activeRegistrations = (
+    (await db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM teams t
+         JOIN events e ON e.id = t.event_id
+         WHERE e.organizer_id = ? AND e.status = 'published' AND t.approval_status = 'approved'`,
+      )
+      .get(organizerId)) as { c: number }
+  ).c;
+  const projectsSubmitted = (
+    (await db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM projects p
          JOIN teams t ON t.id = p.team_id
-         WHERE t.event_id = ? AND t.approval_status = 'approved'
-       )`,
-    )
-    .get(eventId) as { c: number }).c;
-  const judgingPct = projects > 0 && judges > 0 ? Math.round((completed / (projects * judges)) * 100) : 0;
+         JOIN events e ON e.id = t.event_id
+         WHERE e.organizer_id = ? AND t.approval_status = 'approved'`,
+      )
+      .get(organizerId)) as { c: number }
+  ).c;
+  const certificatesIssued = (
+    (await db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM certificates c
+         JOIN events e ON e.id = c.event_id
+         WHERE e.organizer_id = ?`,
+      )
+      .get(organizerId)) as { c: number }
+  ).c;
+  return { totalEvents, activeRegistrations, projectsSubmitted, certificatesIssued };
+}
 
-  return { approvedTeams, pendingTeams, projects, judgingPct, judges };
+async function getEventCardStats(eventId: string): Promise<EventCardStats> {
+  const db = getDb();
+  const approvedTeams = (
+    (await db
+      .prepare("SELECT COUNT(*) AS c FROM teams WHERE event_id = ? AND approval_status = 'approved'")
+      .get(eventId)) as { c: number }
+  ).c;
+  const pendingTeams = (
+    (await db
+      .prepare("SELECT COUNT(*) AS c FROM teams WHERE event_id = ? AND approval_status = 'pending'")
+      .get(eventId)) as { c: number }
+  ).c;
+  const projects = (
+    (await db
+      .prepare(
+        "SELECT COUNT(*) AS c FROM projects WHERE team_id IN (SELECT id FROM teams WHERE event_id = ? AND approval_status = 'approved')",
+      )
+      .get(eventId)) as { c: number }
+  ).c;
+  return { approvedTeams, pendingTeams, projects };
+}
+
+function StatTile({ icon, label, value, hint }: { icon: string; label: string; value: number; hint: string }) {
+  return (
+    <Card className="p-5 transition hover:shadow-md">
+      <div className="flex items-center gap-3">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100 text-2xl" aria-hidden="true">
+          {icon}
+        </span>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{label}</p>
+          <p className="text-3xl font-extrabold text-slate-900">{value.toLocaleString()}</p>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-slate-500">{hint}</p>
+    </Card>
+  );
+}
+
+function EventCard({ event, stats }: { event: EventRow; stats: EventCardStats }) {
+  const cover = (event.cover_url ?? '').trim() || (event.logo_url ?? '').trim();
+  const actionBtn =
+    'inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-semibold transition';
+  return (
+    <Card className="flex flex-col overflow-hidden transition hover:shadow-lg">
+      {cover ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={cover} alt={`${event.name} cover`} className="h-36 w-full object-cover" />
+      ) : (
+        <div
+          className="flex h-36 w-full items-center justify-center bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800"
+          aria-hidden="true"
+        >
+          <span className="px-4 text-center text-2xl font-extrabold tracking-tight text-white/90">
+            {event.name}
+          </span>
+        </div>
+      )}
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="text-lg font-bold text-slate-900">{event.name}</h3>
+          <span
+            className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold capitalize ${
+              STATUS_STYLES[event.status] ?? STATUS_STYLES.draft
+            }`}
+          >
+            {event.status}
+          </span>
+        </div>
+        <p className="mt-1 font-mono text-xs text-slate-400">/e/{event.slug}</p>
+        <div className="mt-3 flex items-center gap-4 text-sm text-slate-600">
+          <span>
+            👥 <strong className="text-slate-900">{stats.approvedTeams}</strong> teams
+          </span>
+          <span>
+            🚀 <strong className="text-slate-900">{stats.projects}</strong> projects
+          </span>
+          {stats.pendingTeams > 0 && (
+            <a
+              href={`/dashboard/events/${event.id}#teams`}
+              className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 transition hover:bg-amber-200"
+              title="Teams awaiting approval"
+            >
+              {stats.pendingTeams} pending
+            </a>
+          )}
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <a
+            href={`/dashboard/events/${event.id}`}
+            className={`${actionBtn} border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700`}
+          >
+            ⚙️ Manage
+          </a>
+          <a
+            href={`/dashboard/events/${event.id}/analytics`}
+            className={`${actionBtn} border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700`}
+          >
+            📊 Analytics
+          </a>
+          <a
+            href={`/dashboard/events/${event.id}/checkin`}
+            className={`${actionBtn} border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700`}
+          >
+            📱 Check-in
+          </a>
+          <a
+            href={`/e/${event.slug}/live`}
+            target="_blank"
+            rel="noreferrer"
+            className={`${actionBtn} border-slate-300 bg-white text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700`}
+          >
+            🖥️ Live screen
+          </a>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 export default async function DashboardPage() {
@@ -69,116 +192,103 @@ export default async function DashboardPage() {
 
   await migrate();
   const db = getDb();
-  const events = await db
+  const events = (await db
     .prepare('SELECT * FROM events WHERE organizer_id = ? ORDER BY created_at DESC')
-    .all(org.id) as EventRow[];
+    .all(org.id)) as EventRow[];
 
-  const stats = new Map<string, EventStats>();
+  const stats = await getDashboardStats(org.id);
+  const cardStats = new Map<string, EventCardStats>();
   for (const e of events) {
-    stats.set(e.id, await getStats(e.id));
+    cardStats.set(e.id, await getEventCardStats(e.id));
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <TopNav title={org.name} right={<LogoutButton />} />
-      <Container className="py-10">
+    <OrganizerShell organizer={org} active="dashboard">
+      <Container className="py-8 sm:py-10">
         <PageHeader
-          title="Your hackathons"
-          subtitle={`${org.name} · ${org.email}`}
-          action={<LinkButton href="/dashboard/events/new">+ New event</LinkButton>}
+          title="Welcome back 👋"
+          subtitle={org.email}
+          action={<LinkButton href="/dashboard/events/new">➕ New event</LinkButton>}
         />
 
-        {events.length === 0 ? (
-          <Card className="p-10 text-center sm:p-14">
-            <p className="text-5xl" role="img" aria-label="Rocket">🚀</p>
-            <p className="mt-4 text-lg font-semibold text-slate-900">No events yet</p>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
-              Create your first hackathon and share the public link with participants.
-              Registrations, project submissions and judging are all handled for you.
-            </p>
-            <div className="mt-6">
-              <LinkButton href="/dashboard/events/new">+ Create your first event</LinkButton>
+        {/* stat tiles */}
+        <section aria-label="Account statistics" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatTile icon="📅" label="Total events" value={stats.totalEvents} hint="Hackathons you've created" />
+          <StatTile
+            icon="👥"
+            label="Active registrations"
+            value={stats.activeRegistrations}
+            hint="Approved teams on published events"
+          />
+          <StatTile
+            icon="🚀"
+            label="Projects submitted"
+            value={stats.projectsSubmitted}
+            hint="Across all your events"
+          />
+          <StatTile
+            icon="🎓"
+            label="Certificates issued"
+            value={stats.certificatesIssued}
+            hint="QR-verified participant certificates"
+          />
+        </section>
+
+        {/* events */}
+        <section id="events" aria-label="Your events" className="mt-10 scroll-mt-24">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900">Your events</h2>
+            {events.length > 0 && (
+              <a
+                href="/dashboard/events/new"
+                className="text-sm font-semibold text-indigo-600 transition hover:text-indigo-800 hover:underline"
+              >
+                ➕ New event
+              </a>
+            )}
+          </div>
+
+          {events.length === 0 ? (
+            <Card className="p-6 sm:p-10">
+              <EmptyState
+                icon="🚀"
+                title="No events yet"
+                description="Create your first hackathon and share the public link with participants. Registrations, project submissions and judging are all handled for you."
+                actionLabel="➕ Create your first event"
+                actionHref="/dashboard/events/new"
+              />
+              <div className="flex justify-center">
+                <SeedDemoButton />
+              </div>
+            </Card>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {events.map((e) => (
+                <EventCard
+                  key={e.id}
+                  event={e}
+                  stats={
+                    cardStats.get(e.id) ?? { approvedTeams: 0, pendingTeams: 0, projects: 0 }
+                  }
+                />
+              ))}
+              {/* New event card */}
+              <a
+                href="/dashboard/events/new"
+                className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-indigo-300 bg-indigo-50/40 p-6 text-center transition hover:border-indigo-500 hover:bg-indigo-50"
+              >
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-3xl text-white shadow-sm" aria-hidden="true">
+                  ➕
+                </span>
+                <p className="mt-4 text-lg font-bold text-slate-900">New event</p>
+                <p className="mt-1 max-w-[220px] text-sm text-slate-500">
+                  Start another hackathon — takes under a minute.
+                </p>
+              </a>
             </div>
-            <SeedDemoButton />
-          </Card>
-        ) : (
-          <Card className="overflow-x-auto p-0">
-            <table className="w-full min-w-[880px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-5 py-3 font-semibold">Event</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Teams</th>
-                  <th className="px-4 py-3 font-semibold">Projects</th>
-                  <th className="px-4 py-3 font-semibold">Judging</th>
-                  <th className="px-5 py-3 text-right font-semibold">Quick actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {events.map((e) => {
-                  const s = stats.get(e.id) ?? { approvedTeams: 0, pendingTeams: 0, projects: 0, judgingPct: 0, judges: 0 };
-                  return (
-                    <tr key={e.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
-                      <td className="px-5 py-4">
-                        <a href={`/dashboard/events/${e.id}`} className="font-bold text-slate-900 hover:text-indigo-700">
-                          {e.name}
-                        </a>
-                        <p className="mt-0.5 font-mono text-xs text-slate-400">/e/{e.slug}</p>
-                        <div className="mt-1.5 flex gap-2">
-                          <a href={`/dashboard/events/${e.id}`} className="text-xs font-semibold text-indigo-600 hover:underline">
-                            Manage →
-                          </a>
-                          {(e.status === 'published' || e.status === 'closed') && (
-                            <a href={`/e/${e.slug}`} className="text-xs font-semibold text-slate-500 hover:underline">
-                              Public page
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${STATUS_STYLES[e.status] ?? STATUS_STYLES.draft}`}>
-                          {e.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className="font-bold text-slate-900">{s.approvedTeams}</span>
-                        {s.pendingTeams > 0 && (
-                          <a
-                            href={`/dashboard/events/${e.id}#teams`}
-                            className="ml-2 inline-block rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800 hover:bg-amber-200"
-                            title="Teams awaiting approval"
-                          >
-                            {s.pendingTeams} pending
-                          </a>
-                        )}
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className="font-bold text-slate-900">{s.projects}</span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-200">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
-                              style={{ width: `${Math.min(100, s.judgingPct)}%` }}
-                            />
-                          </div>
-                          <span className="text-xs font-semibold text-slate-600">{s.judgingPct}%</span>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex justify-end">
-                          <QuickActions eventId={e.id} status={e.status} slug={e.slug} eventName={e.name} />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </Card>
-        )}
+          )}
+        </section>
       </Container>
-    </div>
+    </OrganizerShell>
   );
 }

@@ -14,7 +14,14 @@ export interface LiveData {
   judgingPct: number;
   scoredCells: number;
   totalCells: number;
-  announcements: { id: string; message: string; created_at: string }[];
+  announcements: {
+    id: string;
+    title: string;
+    type: string;
+    pinned: number;
+    message: string;
+    created_at: string;
+  }[];
   podium: { team_name: string; title: string; score: number }[] | null;
   sponsors: { name: string; logo_url: string; tier: string }[];
 }
@@ -95,6 +102,9 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
       ? data.announcements.map((a) => a.message)
       : [`Welcome to ${data.eventName}!`];
 
+  // Announcements flagged type='deadline' surface in the alert banner.
+  const deadlineAlerts = data.announcements.filter((a) => a.type === 'deadline');
+
   // Podium order: 2nd, 1st, 3rd (1st tallest, centered).
   const podiumOrder =
     data.podium && data.podium.length >= 3
@@ -167,6 +177,15 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
           ⚠ Submissions close in {pad(mm)}:{pad(ss)}
         </div>
       )}
+      {deadlineAlerts.map((a) => (
+        <div
+          key={a.id}
+          className="hcc-blink shrink-0 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 px-4 py-2 text-center text-lg font-black uppercase tracking-widest text-white md:text-2xl"
+        >
+          ⚠️ {a.title ? `${a.title}: ` : ''}
+          {a.message}
+        </div>
+      ))}
 
       {/* ── Countdown + stat tiles ─────────────────────────── */}
       <section className="grid shrink-0 grid-cols-1 gap-4 px-4 pt-4 md:grid-cols-12 md:px-8">

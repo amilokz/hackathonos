@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const teams = await db
     .prepare(
       `SELECT id, name, contact_name, contact_email, contact_phone, members_json,
-              approval_status, created_at
+              approval_status, looking_for, is_open, invite_code, created_at
        FROM teams WHERE event_id = ? ORDER BY created_at DESC`,
     )
     .all(params.id);

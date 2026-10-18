@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // DbRow values are dynamic by nature (any column type); `any` is intentional here.
 import { createClient, type Client } from '@libsql/client';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -226,6 +227,50 @@ const DDL = `
       created_at TEXT NOT NULL,
       FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
     );
+
+    -- Team Finder: individual roster entries (new joins + invite-code joins).
+    -- Legacy teams only have members_json; this table grows as participants
+    -- join via the finder, invite codes, or accepted join requests.
+    -- participant_id links a row to a participant profile (Worker 1);
+    -- role marks captain/member (Worker 1). Both are nullable-ish so each
+    -- worker's inserts (which may omit one column) keep working.
+    CREATE TABLE IF NOT EXISTS team_members (
+      id TEXT PRIMARY KEY,
+      team_id TEXT NOT NULL,
+      participant_id TEXT DEFAULT '',
+      name TEXT NOT NULL,
+      email TEXT DEFAULT '',
+      role TEXT DEFAULT 'member',
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+    );
+
+    -- Team Finder: join requests from participants to open teams.
+    CREATE TABLE IF NOT EXISTS join_requests (
+      id TEXT PRIMARY KEY,
+      team_id TEXT NOT NULL,
+      participant_id TEXT NOT NULL,
+      message TEXT DEFAULT '',
+      status TEXT DEFAULT 'pending',
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+      UNIQUE (team_id, participant_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS participants (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      skills TEXT DEFAULT '',
+      bio TEXT DEFAULT '',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_participants_email ON participants(email);
+    CREATE INDEX IF NOT EXISTS idx_team_members_team ON team_members(team_id);
+    CREATE INDEX IF NOT EXISTS idx_team_members_participant ON team_members(participant_id);
+    CREATE INDEX IF NOT EXISTS idx_join_requests_team ON join_requests(team_id);
+    CREATE INDEX IF NOT EXISTS idx_join_requests_participant ON join_requests(participant_id);
 `;
 
 /**
@@ -264,6 +309,10 @@ async function ensureEventColumns(): Promise<void> {
 const TEAM_COLUMN_ADDITIONS = [
   "ALTER TABLE teams ADD COLUMN approval_status TEXT DEFAULT 'approved'",
   'ALTER TABLE teams ADD COLUMN checkin_code TEXT DEFAULT \'\'',
+  // Team Finder columns:
+  "ALTER TABLE teams ADD COLUMN looking_for TEXT DEFAULT ''",
+  'ALTER TABLE teams ADD COLUMN is_open INTEGER DEFAULT 1',
+  "ALTER TABLE teams ADD COLUMN invite_code TEXT DEFAULT ''",
 ];
 
 const SCORE_COLUMN_ADDITIONS = [
@@ -293,6 +342,55 @@ async function ensureScoreColumns(): Promise<void> {
   }
 }
 
+const INVITE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I lookalikes
+
+function randomInviteCode(): string {
+  const bytes = crypto.randomBytes(5);
+  let suffix = '';
+  for (let i = 0; i < 5; i++) {
+    suffix += INVITE_CODE_ALPHABET[bytes[i] % INVITE_CODE_ALPHABET.length];
+  }
+  return 'TEAM-' + suffix;
+}
+
+/**
+ * Backfills invite codes for teams that don't have one yet (created before
+ * the Team Finder shipped), then enforces uniqueness going forward.
+ * Runs inside migrate() so it is idempotent: teams with a code are skipped.
+ */
+async function backfillInviteCodes(): Promise<void> {
+  const db = getDb();
+  const missing = (await db
+    .prepare("SELECT id FROM teams WHERE invite_code IS NULL OR invite_code = ''")
+    .all()) as { id: string }[];
+  for (const row of missing) {
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const code = randomInviteCode();
+      const clash = await db.prepare('SELECT id FROM teams WHERE invite_code = ?').get(code);
+      if (clash) continue;
+      await db.prepare('UPDATE teams SET invite_code = ? WHERE id = ?').run(code, row.id);
+      break;
+    }
+  }
+  await db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_teams_invite_code ON teams(invite_code)');
+}
+
+/**
+ * Adds participant_id to team_members (added after the initial CREATE TABLE).
+ * Guarded: checks PRAGMA table_info first and only ALTERs when the column is
+ * missing, so this is a no-op on tables already created with the column.
+ */
+async function ensureTeamMemberColumns(): Promise<void> {
+  const db = getDb();
+  const cols = (await db
+    .prepare('PRAGMA table_info(team_members)')
+    .all()) as { name: string }[];
+  const names = new Set(cols.map((c) => c.name));
+  if (!names.has('participant_id')) {
+    await db.exec('ALTER TABLE team_members ADD COLUMN participant_id TEXT');
+  }
+}
+
 /**
  * Creates all HackathonOS tables if they do not exist.
  * Safe to call on every boot — pure DDL, no data changes.
@@ -303,5 +401,7 @@ export async function migrate(): Promise<void> {
   await db.exec(DDL);
   await ensureEventColumns();
   await ensureTeamColumns();
+  await backfillInviteCodes();
   await ensureScoreColumns();
+  await ensureTeamMemberColumns();
 }

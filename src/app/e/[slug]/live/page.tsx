@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
+import { ensureAnnouncementColumns } from '@/lib/announcement-columns';
 import { computeResults } from '@/lib/results';
 import LiveCommandCenter, { type LiveData } from '@/components/LiveCommandCenter';
 
@@ -26,6 +27,7 @@ export default async function LivePage({
   searchParams: { kiosk?: string };
 }) {
   await migrate();
+  await ensureAnnouncementColumns();
   const db = getDb();
 
   const event = (await db
@@ -79,11 +81,20 @@ export default async function LivePage({
   const totalCells = projectsCount * judgesCount;
   const judgingPct = totalCells > 0 ? Math.min(100, Math.round((scoredCells / totalCells) * 100)) : 0;
 
+  // Pinned first so important broadcasts always hit the ticker; type='deadline'
+  // items are lifted into the alert banner by LiveCommandCenter.
   const announcements = (await db
     .prepare(
-      'SELECT id, message, created_at FROM announcements WHERE event_id = ? ORDER BY created_at DESC, rowid DESC LIMIT 5'
+      'SELECT id, title, type, pinned, message, created_at FROM announcements WHERE event_id = ? ORDER BY pinned DESC, created_at DESC, rowid DESC LIMIT 8'
     )
-    .all(eventId)) as { id: string; message: string; created_at: string }[];
+    .all(eventId)) as {
+    id: string;
+    title: string;
+    type: string;
+    pinned: number;
+    message: string;
+    created_at: string;
+  }[];
 
   const sponsors = (await db
     .prepare(
