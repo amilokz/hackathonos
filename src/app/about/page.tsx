@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Container, Card, PageHeader, Breadcrumb, LinkButton, BrandFooter } from '@/components/ui';
+import PublicNav from '@/components/PublicNav';
 
 export const metadata: Metadata = {
   title: 'About | HackathonOS',
@@ -71,6 +72,7 @@ const AUDIENCE = [
 export default function AboutPage() {
   return (
     <main className="min-h-screen bg-white text-slate-900">
+      <PublicNav />
       <Container className="py-10 sm:py-14">
         <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 

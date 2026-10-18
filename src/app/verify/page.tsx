@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, Card, Button, Field, inputClass } from '@/components/ui';
+import PublicNav from '@/components/PublicNav';
 
 export default function VerifyPage() {
   const router = useRouter();
@@ -15,7 +16,9 @@ export default function VerifyPage() {
   }
 
   return (
-    <Container className="flex min-h-[70vh] items-center justify-center py-12">
+    <main className="min-h-screen bg-white">
+      <PublicNav />
+      <Container className="flex min-h-[70vh] items-center justify-center py-12">
       <Card className="w-full max-w-md p-8 text-center">
         <div className="text-5xl">🎓</div>
         <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900">
@@ -44,5 +47,6 @@ export default function VerifyPage() {
         </p>
       </Card>
     </Container>
+    </main>
   );
 }

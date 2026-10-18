@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getDb, migrate } from "@/lib/db";
 import { BrandFooter } from "@/components/ui";
+import PublicNav from "@/components/PublicNav";
 
 export const metadata: Metadata = {
   title: "HackathonOS — Run Hackathons End to End",
@@ -535,33 +536,7 @@ export default async function Home() {
   const stats = await getStats();
   return (
     <main className="min-h-screen bg-white text-slate-900">
-      {/* Nav */}
-      <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/85 backdrop-blur">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
-          <a href="/" className="text-xl font-extrabold tracking-tight">
-            Hackathon<span className="text-indigo-600">OS</span>
-          </a>
-          <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
-            <a href="#features" className="transition hover:text-indigo-600">Features</a>
-            <a href="#how" className="transition hover:text-indigo-600">How it works</a>
-            <a href="/past" className="transition hover:text-indigo-600">Past hackathons</a>
-            <a href="/about" className="transition hover:text-indigo-600">About</a>
-            <a href="/contact" className="transition hover:text-indigo-600">Contact</a>
-            <a href="#cta" className="transition hover:text-indigo-600">Get started</a>
-          </nav>
-          <div className="flex items-center gap-3">
-            <a href="/login" className="text-sm font-semibold text-slate-600 transition hover:text-indigo-600">
-              Sign in
-            </a>
-            <a
-              href="/register"
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
-            >
-              Get started free
-            </a>
-          </div>
-        </div>
-      </header>
+      <PublicNav />
 
       {/* Hero */}
       <section className="relative overflow-hidden">

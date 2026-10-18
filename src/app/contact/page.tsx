@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Container, Card, PageHeader, Breadcrumb, BrandFooter } from '@/components/ui';
+import PublicNav from '@/components/PublicNav';
 import ContactForm from './ContactForm';
 
 export const metadata: Metadata = {
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <main className="min-h-screen bg-white text-slate-900">
+      <PublicNav />
       <Container className="py-10 sm:py-14">
         <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'Contact' }]} />
         <PageHeader
