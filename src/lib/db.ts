@@ -196,6 +196,28 @@ const DDL = `
       mime TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS judges (
+      id TEXT PRIMARY KEY,
+      event_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      email TEXT DEFAULT '',
+      access_code TEXT UNIQUE NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS checkins (
+      id TEXT PRIMARY KEY,
+      event_id TEXT NOT NULL,
+      team_id TEXT NOT NULL,
+      member_name TEXT NOT NULL,
+      checked_in_at TEXT NOT NULL,
+      checked_in_by TEXT DEFAULT '',
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+      FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+      UNIQUE (event_id, team_id, member_name)
+    );
 `;
 
 /**
@@ -212,11 +234,49 @@ const EVENT_COLUMN_ADDITIONS = [
   "ALTER TABLE events ADD COLUMN schedule TEXT DEFAULT ''",
   "ALTER TABLE events ADD COLUMN faq TEXT DEFAULT ''",
   "ALTER TABLE events ADD COLUMN highlight_video_url TEXT DEFAULT ''",
+  "ALTER TABLE events ADD COLUMN require_team_approval INTEGER DEFAULT 0",
 ];
 
 async function ensureEventColumns(): Promise<void> {
   const db = getDb();
   for (const alter of EVENT_COLUMN_ADDITIONS) {
+    try {
+      await db.exec(alter);
+    } catch (e) {
+      if (!/duplicate column/i.test(String((e as Error)?.message ?? e))) throw e;
+    }
+  }
+}
+
+/**
+ * Columns added to teams/scores after initial CREATE TABLE.
+ * Backfills: approval_status defaults to 'approved' for existing teams;
+ * checkin_code is left empty and generated lazily on first pass view.
+ */
+const TEAM_COLUMN_ADDITIONS = [
+  "ALTER TABLE teams ADD COLUMN approval_status TEXT DEFAULT 'approved'",
+  'ALTER TABLE teams ADD COLUMN checkin_code TEXT DEFAULT \'\'',
+];
+
+const SCORE_COLUMN_ADDITIONS = [
+  "ALTER TABLE scores ADD COLUMN judge_id TEXT DEFAULT ''",
+  "ALTER TABLE scores ADD COLUMN overall_notes TEXT DEFAULT ''",
+];
+
+async function ensureTeamColumns(): Promise<void> {
+  const db = getDb();
+  for (const alter of TEAM_COLUMN_ADDITIONS) {
+    try {
+      await db.exec(alter);
+    } catch (e) {
+      if (!/duplicate column/i.test(String((e as Error)?.message ?? e))) throw e;
+    }
+  }
+}
+
+async function ensureScoreColumns(): Promise<void> {
+  const db = getDb();
+  for (const alter of SCORE_COLUMN_ADDITIONS) {
     try {
       await db.exec(alter);
     } catch (e) {
@@ -234,4 +294,6 @@ export async function migrate(): Promise<void> {
   await db.exec('PRAGMA foreign_keys = ON');
   await db.exec(DDL);
   await ensureEventColumns();
+  await ensureTeamColumns();
+  await ensureScoreColumns();
 }
