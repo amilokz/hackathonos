@@ -8,6 +8,8 @@ import PublishToggle from '@/components/PublishToggle';
 import QuickActions from '@/components/QuickActions';
 import PendingApprovals from '@/components/PendingApprovals';
 import TeamsTable from '@/components/TeamsTable';
+import JudgesSection from '@/components/JudgesSection';
+import AnnouncementsForm from '@/components/AnnouncementsForm';
 import type { EventRow } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -138,7 +140,9 @@ export default async function ManageEventPage({ params }: { params: { id: string
               )}
             </Card>
 
-            <div id="judges" className="scroll-mt-24">{/* COORDINATOR MOUNT: JudgesSection */}</div>
+            <div id="judges" className="scroll-mt-24">
+              <JudgesSection eventId={event.id} />
+            </div>
 
             <section id="teams" className="scroll-mt-24">
               <Card className="p-5 sm:p-6">
@@ -164,7 +168,9 @@ export default async function ManageEventPage({ params }: { params: { id: string
               </Card>
             </section>
 
-            <div id="announcements" className="scroll-mt-24">{/* COORDINATOR MOUNT: AnnouncementsForm */}</div>
+            <div id="announcements" className="scroll-mt-24">
+              <AnnouncementsForm eventId={event.id} />
+            </div>
 
             <Card className="p-5">
               <h2 className="font-bold text-slate-900">Quick actions</h2>
