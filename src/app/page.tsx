@@ -264,6 +264,86 @@ function PastHackathons({ events }: { events: Awaited<ReturnType<typeof getPastE
   );
 }
 
+const EVENT_PHOTOS = [
+  { src: "/images/event-1.jpg", alt: "Speaker presenting at a TechKhwa community tech meetup" },
+  { src: "/images/event-2.jpg", alt: "Attendees at a TechKhwa community tech meetup" },
+  { src: "/images/event-3.jpg", alt: "Participants at a TechKhwa community tech meetup" },
+  { src: "/images/event-4.jpg", alt: "Team photo at a TechKhwa community tech meetup" },
+  { src: "/images/event-5.jpg", alt: "Kashif Ali presenting on stage at a tech meetup" },
+  { src: "/images/event-6.jpg", alt: "Speaker on stage at NIC Peshawar tech meetup" },
+];
+
+function EventGallery() {
+  return (
+    <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
+      <p className="text-center text-sm font-bold uppercase tracking-widest text-indigo-600">In the field</p>
+      <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">
+        Real events. Real energy.
+      </h2>
+      <p className="mx-auto mt-4 max-w-xl text-center text-slate-600">
+        Moments from TechKhwa community meetups — the same stages and crowds your hackathon will fill.
+      </p>
+      <div className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-3">
+        {EVENT_PHOTOS.map((p, i) => (
+          <div
+            key={p.src}
+            className={`group relative overflow-hidden rounded-2xl border border-slate-200 shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${
+              i === 0 ? "col-span-2 lg:col-span-1" : ""
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={p.src}
+              alt={p.alt}
+              loading="lazy"
+              className="h-56 w-full object-cover transition duration-500 group-hover:scale-105 sm:h-64"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent opacity-0 transition group-hover:opacity-100" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function OrganizerSpotlight() {
+  return (
+    <section className="border-y border-slate-200/70 bg-slate-50/70">
+      <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[auto_1fr] lg:gap-14">
+        <div className="relative mx-auto">
+          <div aria-hidden className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-indigo-200 via-violet-200 to-sky-200 blur-xl" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/kashif-ali.jpg"
+            alt="Kashif Ali, Founder & CEO of TechKhwa"
+            className="relative h-52 w-52 rounded-[1.75rem] border-4 border-white object-cover shadow-2xl sm:h-64 sm:w-64"
+          />
+          <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-bold text-white shadow-lg">
+            🏆 Pride of KP Award
+          </span>
+        </div>
+        <div className="text-center lg:text-left">
+          <p className="text-sm font-bold uppercase tracking-widest text-indigo-600">Built for organizers</p>
+          <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">
+            Made for TechKhwa — by people who run hackathons
+          </h2>
+          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate-600">
+            HackathonOS was crafted for <strong className="text-slate-900">Kashif Ali</strong>, Founder &amp; CEO of{" "}
+            <strong className="text-slate-900">TechKhwa</strong> — judge at national hackathons including AI Seekho
+            Builders Day at NIC Islamabad, and speaker at youth summits across Pakistan. Every feature exists because
+            real organizers asked for it.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+            <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">🎤 Hackathon judge</span>
+            <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">🌍 Youth summit speaker</span>
+            <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">💡 Tech community builder</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default async function Home() {
   const pastEvents = await getPastEvents();
   return (
@@ -359,6 +439,9 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Event photo gallery */}
+      <EventGallery />
+
       {/* Features */}
       <section id="features" className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
         <p className="text-center text-sm font-bold uppercase tracking-widest text-indigo-600">Features</p>
@@ -404,6 +487,9 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* Organizer spotlight */}
+      <OrganizerSpotlight />
 
       {/* Past hackathons preview */}
       <PastHackathons events={pastEvents} />
