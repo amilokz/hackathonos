@@ -627,6 +627,7 @@ export default async function Home() {
       </section>
 
       {/* Live now — published events accepting registrations */}
+      {/* DEBUG-MARKER: liveEvents={liveEvents.length} names={liveEvents.map((e) => e.slug).join(',')} */}
       <LiveNow events={liveEvents} />
 
       {/* Event photo gallery */}
