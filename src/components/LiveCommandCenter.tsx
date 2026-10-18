@@ -240,7 +240,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
   };
 
   return (
-    <div className="flex h-dvh flex-col overflow-x-clip overflow-y-auto bg-slate-950 text-white md:overflow-hidden">
+    <div className="flex min-h-dvh flex-col overflow-x-clip overflow-y-auto bg-slate-950 text-white">
       <style>{`
         @keyframes hcc-marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes hcc-rise { 0% { transform: translateY(70px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
@@ -490,14 +490,15 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
           <div className="mb-1.5 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 md:text-xs">
             Sponsors
           </div>
-          <div className="hcc-marquee-track hcc-marquee-slow items-center gap-16">
+          <div className="hcc-marquee-track hcc-marquee-slow items-center">
             {[0, 1].map((copy) => (
-              <div key={copy} className="flex shrink-0 items-center gap-16" aria-hidden={copy === 1}>
-                {data.sponsors.map((sp, i) => (
-                  <span
-                    key={`${copy}-${i}`}
-                    className="flex shrink-0 items-center gap-2.5 whitespace-nowrap text-base font-bold text-slate-200 md:text-xl"
-                  >
+              <div key={copy} className="flex shrink-0 items-center" aria-hidden={copy === 1}>
+                {[0, 1, 2].flatMap((rep) =>
+                  data.sponsors.map((sp, i) => (
+                    <span
+                      key={`${copy}-${rep}-${i}`}
+                      className="flex shrink-0 items-center gap-2.5 whitespace-nowrap pr-16 text-base font-bold text-slate-200 md:text-xl"
+                    >
                     {sp.logo_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -511,7 +512,8 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
                       {sp.tier}
                     </span>
                   </span>
-                ))}
+                  )),
+                )}
               </div>
             ))}
           </div>
@@ -526,18 +528,21 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
             Live
           </span>
         </div>
-        <div className="hcc-marquee-track hcc-marquee-ticker min-w-0 flex-1 items-center gap-10">
+        <div className="hcc-marquee-track hcc-marquee-ticker min-w-0 flex-1 items-center">
           {[0, 1].map((copy) => (
-            <div key={copy} className="flex shrink-0 items-center gap-10" aria-hidden={copy === 1}>
-              {tickerItems.map((msg, i) => (
-                <span
-                  key={`${copy}-${i}`}
-                  className="flex shrink-0 items-center gap-3 whitespace-nowrap text-sm font-semibold text-slate-200 md:gap-4 md:text-lg"
-                >
-                  <Icon name="megaphone" className="h-4 w-4 shrink-0 text-indigo-400 md:h-5 md:w-5" />
-                  {msg}
-                </span>
-              ))}
+            <div key={copy} className="flex shrink-0 items-center" aria-hidden={copy === 1}>
+              {/* Repeat 3x so the track is always wider than the viewport — seamless -50% loop */}
+              {[0, 1, 2].flatMap((rep) =>
+                tickerItems.map((msg, i) => (
+                  <span
+                    key={`${copy}-${rep}-${i}`}
+                    className="flex shrink-0 items-center gap-3 whitespace-nowrap pr-10 text-sm font-semibold text-slate-200 md:gap-4 md:pr-14 md:text-lg"
+                  >
+                    <Icon name="megaphone" className="h-4 w-4 shrink-0 text-indigo-400 md:h-5 md:w-5" />
+                    {msg}
+                  </span>
+                )),
+              )}
             </div>
           ))}
         </div>
