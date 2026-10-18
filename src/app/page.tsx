@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getDb, migrate } from "@/lib/db";
+import { computeResults } from "@/lib/results";
 import { BrandFooter } from "@/components/ui";
 import PublicNav from "@/components/PublicNav";
 
@@ -75,6 +76,49 @@ async function getStats() {
     (await db.prepare(`SELECT COUNT(*) AS c FROM certificates`).get()) as { c: number }
   ).c;
   return { events, teams, projects, certificates };
+}
+
+async function getFeaturedProjects() {
+  await migrate();
+  const db = getDb();
+  const events = (await db
+    .prepare(
+      `SELECT id, name FROM events WHERE status = 'closed'
+       ORDER BY end_date DESC, created_at DESC LIMIT 12`
+    )
+    .all()) as Array<{ id: string; name: string }>;
+  const out: Array<{
+    title: string;
+    team_name: string;
+    event_name: string;
+    human_total: number;
+  }> = [];
+  for (const e of events) {
+    const results = await computeResults(e.id);
+    for (const r of results.slice(0, 3)) {
+      if (r.human_total == null) continue;
+      out.push({
+        title: r.title,
+        team_name: r.team_name,
+        event_name: e.name,
+        human_total: r.human_total,
+      });
+    }
+  }
+  out.sort((a, b) => b.human_total - a.human_total);
+  return out.slice(0, 3);
+}
+
+async function getSponsors() {
+  await migrate();
+  const db = getDb();
+  return (await db
+    .prepare(
+      `SELECT name, MAX(logo_url) AS logo_url, MAX(tier) AS tier, MAX(website) AS website
+       FROM sponsors GROUP BY name ORDER BY
+       CASE lower(MAX(tier)) WHEN 'platinum' THEN 0 WHEN 'gold' THEN 1 WHEN 'silver' THEN 2 ELSE 3 END, name`
+    )
+    .all()) as Array<{ name: string; logo_url: string; tier: string; website: string }>;
 }
 
 const FEATURES = [
@@ -530,10 +574,174 @@ function FaqSection() {
   );
 }
 
+function WhySection() {
+  const oldWay = [
+    { icon: "📊", text: "Registrations scattered across forms, spreadsheets, and DMs" },
+    { icon: "💬", text: "Project demos and links lost in group chats the night before finals" },
+    { icon: "😵", text: "Judges scoring from memory; certificates built by hand" },
+  ];
+  const newWay = [
+    { icon: "🖥️", text: "One event page — teams register themselves" },
+    { icon: "📥", text: "Every project lands in a single organized judging queue" },
+    { icon: "⚡", text: "Live leaderboard plus QR-verified certificates in one click" },
+  ];
+  return (
+    <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
+      <p className="text-center text-sm font-bold uppercase tracking-widest text-indigo-600">Why HackathonOS?</p>
+      <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">
+        Stop running hackathons the hard way
+      </h2>
+      <div className="mt-10 grid gap-6 md:grid-cols-2">
+        <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-8">
+          <p className="text-xl font-extrabold text-slate-900">The old way: spreadsheets, group chats, chaos 😩</p>
+          <ul className="mt-5 space-y-4">
+            {oldWay.map((b) => (
+              <li key={b.text} className="flex items-start gap-3 text-sm text-slate-600">
+                <span className="text-lg leading-none">{b.icon}</span>
+                {b.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-violet-50 p-8 shadow-sm">
+          <p className="text-xl font-extrabold text-slate-900">The HackathonOS way: one platform ✅</p>
+          <ul className="mt-5 space-y-4">
+            {newWay.map((b) => (
+              <li key={b.text} className="flex items-start gap-3 text-sm font-medium text-slate-800">
+                <span className="text-lg leading-none">{b.icon}</span>
+                {b.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeaturedProjects({ projects }: { projects: Awaited<ReturnType<typeof getFeaturedProjects>> }) {
+  const medals = ["🥇", "🥈", "🥉"];
+  return (
+    <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
+      <p className="text-center text-sm font-bold uppercase tracking-widest text-indigo-600">Featured projects</p>
+      <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">
+        Builds that took home the trophy
+      </h2>
+      <p className="mx-auto mt-4 max-w-xl text-center text-slate-600">
+        Top-scoring projects from closed events — real teams, real results.
+      </p>
+
+      {projects.length === 0 ? (
+        <div className="mx-auto mt-10 max-w-2xl rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 p-10 text-center">
+          <p className="text-4xl">🏆</p>
+          <p className="mt-3 font-bold text-slate-800">
+            Winning projects will appear here once events wrap up 🏆
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+            Finished hackathons publish their top projects in this space. Be the first to claim it.
+          </p>
+          <a
+            href="/register"
+            className="mt-5 inline-block rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          >
+            Run your hackathon
+          </a>
+        </div>
+      ) : (
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
+          {projects.map((p, i) => (
+            <div
+              key={`${p.event_name}-${p.team_name}-${p.title}`}
+              className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-3xl">{medals[i] ?? `#${i + 1}`}</span>
+                <span className="rounded-full bg-indigo-50 px-3 py-1 text-lg font-extrabold text-indigo-700">
+                  {Math.round(p.human_total)}
+                  <span className="text-xs font-medium text-slate-400">/100</span>
+                </span>
+              </div>
+              <h3 className="mt-4 text-lg font-bold text-slate-900">{p.title}</h3>
+              <p className="mt-1 text-sm text-slate-500">👥 {p.team_name}</p>
+              <p className="mt-auto pt-3 text-xs font-medium text-slate-400">🏁 {p.event_name}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function SponsorsSection({ sponsors }: { sponsors: Awaited<ReturnType<typeof getSponsors>> }) {
+  return (
+    <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
+      <p className="text-center text-sm font-bold uppercase tracking-widest text-indigo-600">
+        Sponsors &amp; partners
+      </p>
+      <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">
+        Powered by people who believe in builders
+      </h2>
+      <p className="mx-auto mt-4 max-w-xl text-center text-slate-600">
+        Sponsors get measurable branding on event pages, leaderboards, and certificates — here is where they shine.
+      </p>
+
+      {sponsors.length === 0 ? (
+        <div className="mx-auto mt-10 max-w-2xl rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 p-10 text-center">
+          <p className="text-4xl">🤝</p>
+          <p className="mt-3 font-bold text-slate-800">Put your brand in front of builders</p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
+            Sponsor logos land on event pages, the live leaderboard, and winner certificates. Talk to us about
+            sponsoring an upcoming hackathon.
+          </p>
+          <a
+            href="/contact"
+            className="mt-5 inline-block rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          >
+            Become a sponsor →
+          </a>
+        </div>
+      ) : (
+        <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {sponsors.map((s) => {
+            const body = s.logo_url?.trim() ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={s.logo_url} alt={`${s.name} logo`} className="max-h-12 w-auto object-contain" />
+            ) : (
+              <span className="text-center font-bold text-slate-700">{s.name}</span>
+            );
+            return s.website?.trim() ? (
+              <a
+                key={s.name}
+                href={s.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={s.name}
+                className="flex min-h-[6rem] items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              >
+                {body}
+              </a>
+            ) : (
+              <div
+                key={s.name}
+                title={s.name}
+                className="flex min-h-[6rem] items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+              >
+                {body}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default async function Home() {
   const pastEvents = await getPastEvents();
   const liveEvents = await getLiveEvents();
   const stats = await getStats();
+  const featuredProjects = await getFeaturedProjects();
+  const sponsors = await getSponsors();
   return (
     <main className="min-h-screen bg-white text-slate-900">
       <PublicNav />
@@ -603,14 +811,14 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Live now — published events accepting registrations */}
+      {/* 2. Upcoming hackathons — published events accepting registrations */}
       {/* DEBUG-MARKER: liveEvents={liveEvents.length} names={liveEvents.map((e) => e.slug).join(',')} */}
       <LiveNow events={liveEvents} />
 
-      {/* Event photo gallery */}
-      <EventGallery />
+      {/* 3. Why HackathonOS? */}
+      <WhySection />
 
-      {/* Features */}
+      {/* 4. Features */}
       <section id="features" className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
         <p className="text-center text-sm font-bold uppercase tracking-widest text-indigo-600">Features</p>
         <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-extrabold tracking-tight sm:text-4xl text-balance">
@@ -635,7 +843,10 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* How it works */}
+      {/* Stats band */}
+      <StatsBand stats={stats} />
+
+      {/* 5. How it works */}
       <section id="how" className="border-y border-slate-200/70 bg-slate-50/70">
         <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
           <p className="text-center text-sm font-bold uppercase tracking-widest text-indigo-600">How it works</p>
@@ -656,19 +867,25 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Stats band */}
-      <StatsBand stats={stats} />
+      {/* 6. Featured projects — top 3 from closed events */}
+      <FeaturedProjects projects={featuredProjects} />
 
-      {/* Organizer spotlight */}
+      {/* 7. Community & events gallery */}
+      <EventGallery />
+
+      {/* 8. Sponsors & partners */}
+      <SponsorsSection sponsors={sponsors} />
+
+      {/* 9. Founder / About TechKhwa */}
       <OrganizerSpotlight />
 
-      {/* Past hackathons preview */}
+      {/* 10. Hall of fame */}
       <PastHackathons events={pastEvents} />
 
-      {/* FAQ */}
+      {/* 11. FAQ */}
       <FaqSection />
 
-      {/* CTA */}
+      {/* 12. Final CTA + Footer */}
       <section id="cta" className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 px-6 py-16 text-center shadow-2xl sm:px-12">
           <div aria-hidden className="pointer-events-none absolute inset-0">
