@@ -293,7 +293,7 @@ function SidebarBody({
       </a>
 
       {/* Grouped nav */}
-      <nav className="min-h-0 flex-1 space-y-6 overflow-y-auto pr-1" aria-label="Organizer navigation">
+      <nav className="sidebar-scroll min-h-0 flex-1 space-y-6 overflow-y-auto pr-1" aria-label="Organizer navigation">
         {groups.map((g) => (
           <div key={g.title}>
             <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
