@@ -35,7 +35,8 @@ export default async function LivePage({
     .get(params.slug)) as
     | { id: string; name: string; slug: string; status: string; end_date: string }
     | undefined;
-  if (!event) notFound();
+  // Only published/closed events have a public live page (same visibility as /e/[slug]).
+  if (!event || (event.status !== 'published' && event.status !== 'closed')) notFound();
 
   const eventId = event.id;
 

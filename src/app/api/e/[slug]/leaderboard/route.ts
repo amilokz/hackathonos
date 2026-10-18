@@ -17,6 +17,10 @@ export async function GET(
   ) as { id: string; name: string; slug: string; description: string; status: string; white_label: number | null; custom_footer_text: string | null } | undefined;
 
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+  // Leaderboard is public only for published/closed events — drafts stay private.
+  if (event.status !== 'published' && event.status !== 'closed') {
+    return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+  }
 
   const results = (await computeResults(event.id)).map((r) => ({
     rank: r.rank,

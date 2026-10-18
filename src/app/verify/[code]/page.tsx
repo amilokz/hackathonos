@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
 import { formatLongDate } from '@/lib/format';
@@ -32,6 +33,9 @@ export default async function VerifyPage({ params }: { params: { code: string } 
         custom_footer_text: string | null;
       }
     | undefined;
+
+  // Unknown codes render the app 404 page (never a 500, never a forged "valid" state).
+  if (!cert) notFound();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
@@ -69,21 +73,10 @@ export default async function VerifyPage({ params }: { params: { code: string } 
             </dl>
             <p className="mt-6 font-mono text-xs text-slate-400">{cert.verification_code}</p>
           </>
-        ) : (
-          <>
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-2xl">
-              ✕
-            </div>
-            <h1 className="mt-4 text-xl font-bold text-slate-900">Certificate not found</h1>
-            <p className="mt-1 text-sm text-slate-500">
-              No certificate exists with code <span className="font-mono">{code}</span>. Check the
-              code and try again.
-            </p>
-          </>
-        )}
-        {cert?.white_label && cert.custom_footer_text?.trim() ? (
+        ) : null}
+        {cert.white_label && cert.custom_footer_text?.trim() ? (
           <p className="mt-8 text-[11px] text-slate-400">{cert.custom_footer_text}</p>
-        ) : !cert?.white_label ? (
+        ) : !cert.white_label ? (
           <p className="mt-8 text-[11px] text-slate-400">Powered by HackathonOS · Built by AKCLNT</p>
         ) : null}
       </div>
