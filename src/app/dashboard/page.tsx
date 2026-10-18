@@ -2,9 +2,11 @@ import { redirect } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
 import { requireOrganizer } from '@/lib/require-organizer';
 import OrganizerShell from '@/components/OrganizerShell';
-import EmptyState from '@/components/EmptyState';
 import EventCard from '@/components/EventCard';
-import { Container, Card, PageHeader, LinkButton } from '@/components/ui';
+import { Container, Card, LinkButton, StatCard, DsIcon } from '@/components/ui';
+import EmptyState from '@/components/EmptyState';
+import { DashIcon } from '@/components/dashboard/icons';
+import DashboardGreeting from '@/components/dashboard/DashboardGreeting';
 import SeedDemoButton from './SeedDemoButton';
 import InviteCodes from '@/components/InviteCodes';
 import UpcomingDeadlines, {
@@ -21,11 +23,16 @@ import type { EventRow } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
+interface StatDelta {
+  /** Percent change vs the previous 30-day window; null when not computable. Never fake. */
+  pct: number | null;
+}
+
 interface DashboardStats {
-  totalEvents: number;
-  activeRegistrations: number;
-  projectsSubmitted: number;
-  certificatesIssued: number;
+  totalEvents: { value: number; delta: StatDelta };
+  activeRegistrations: { value: number; delta: StatDelta };
+  projectsSubmitted: { value: number; delta: StatDelta };
+  certificatesIssued: { value: number; delta: StatDelta };
 }
 
 interface EventCardStats {
@@ -34,42 +41,92 @@ interface EventCardStats {
   projects: number;
 }
 
+/** Percent change of the trailing 30-day window vs the one before it. */
+function windowDelta(recent: number, previous: number): StatDelta {
+  if (previous <= 0) return { pct: null };
+  return { pct: ((recent - previous) / previous) * 100 };
+}
+
+async function windowCount(
+  currentSql: string,
+  previousSql: string,
+  organizerId: string,
+): Promise<{ recent: number; previous: number }> {
+  const db = getDb();
+  const recent = ((await db.prepare(currentSql).get(organizerId)) as { c: number }).c;
+  const previous = ((await db.prepare(previousSql).get(organizerId)) as { c: number }).c;
+  return { recent, previous };
+}
+
 async function getDashboardStats(organizerId: string): Promise<DashboardStats> {
   const db = getDb();
-  const totalEvents = (
-    (await db
-      .prepare('SELECT COUNT(*) AS c FROM events WHERE organizer_id = ?')
-      .get(organizerId)) as { c: number }
-  ).c;
-  const activeRegistrations = (
-    (await db
-      .prepare(
-        `SELECT COUNT(*) AS c FROM teams t
-         JOIN events e ON e.id = t.event_id
-         WHERE e.organizer_id = ? AND e.status = 'published' AND t.approval_status = 'approved'`,
-      )
-      .get(organizerId)) as { c: number }
-  ).c;
-  const projectsSubmitted = (
-    (await db
-      .prepare(
-        `SELECT COUNT(*) AS c FROM projects p
-         JOIN teams t ON t.id = p.team_id
-         JOIN events e ON e.id = t.event_id
-         WHERE e.organizer_id = ? AND t.approval_status = 'approved'`,
-      )
-      .get(organizerId)) as { c: number }
-  ).c;
-  const certificatesIssued = (
-    (await db
-      .prepare(
-        `SELECT COUNT(*) AS c FROM certificates c
-         JOIN events e ON e.id = c.event_id
-         WHERE e.organizer_id = ?`,
-      )
-      .get(organizerId)) as { c: number }
-  ).c;
-  return { totalEvents, activeRegistrations, projectsSubmitted, certificatesIssued };
+  const in30 = `datetime(created_at) >= datetime('now', '-30 days')`;
+  const prev30 = `datetime(created_at) >= datetime('now', '-60 days') AND datetime(created_at) < datetime('now', '-30 days')`;
+
+  const count = async (sql: string) =>
+    ((await db.prepare(sql).get(organizerId)) as { c: number }).c;
+
+  const totalEvents = await count(
+    'SELECT COUNT(*) AS c FROM events WHERE organizer_id = ?',
+  );
+  const activeRegistrations = await count(
+    `SELECT COUNT(*) AS c FROM teams t
+     JOIN events e ON e.id = t.event_id
+     WHERE e.organizer_id = ? AND e.status = 'published' AND t.approval_status = 'approved'`,
+  );
+  const projectsSubmitted = await count(
+    `SELECT COUNT(*) AS c FROM projects p
+     JOIN teams t ON t.id = p.team_id
+     JOIN events e ON e.id = t.event_id
+     WHERE e.organizer_id = ? AND t.approval_status = 'approved'`,
+  );
+  const certificatesIssued = await count(
+    `SELECT COUNT(*) AS c FROM certificates c
+     JOIN events e ON e.id = c.event_id
+     WHERE e.organizer_id = ?`,
+  );
+
+  const ev = await windowCount(
+    `SELECT COUNT(*) AS c FROM events WHERE organizer_id = ? AND ${in30}`,
+    `SELECT COUNT(*) AS c FROM events WHERE organizer_id = ? AND ${prev30}`,
+    organizerId,
+  );
+  const reg = await windowCount(
+    `SELECT COUNT(*) AS c FROM teams t
+     JOIN events e ON e.id = t.event_id
+     WHERE e.organizer_id = ? AND e.status = 'published' AND t.approval_status = 'approved' AND ${in30.replace('created_at', 't.created_at')}`,
+    `SELECT COUNT(*) AS c FROM teams t
+     JOIN events e ON e.id = t.event_id
+     WHERE e.organizer_id = ? AND e.status = 'published' AND t.approval_status = 'approved' AND ${prev30.replace('created_at', 't.created_at')}`,
+    organizerId,
+  );
+  const proj = await windowCount(
+    `SELECT COUNT(*) AS c FROM projects p
+     JOIN teams t ON t.id = p.team_id
+     JOIN events e ON e.id = t.event_id
+     WHERE e.organizer_id = ? AND t.approval_status = 'approved' AND ${in30.replace('created_at', 'p.created_at')}`,
+    `SELECT COUNT(*) AS c FROM projects p
+     JOIN teams t ON t.id = p.team_id
+     JOIN events e ON e.id = t.event_id
+     WHERE e.organizer_id = ? AND t.approval_status = 'approved' AND ${prev30.replace('created_at', 'p.created_at')}`,
+    organizerId,
+  );
+  const cert = await windowCount(
+    `SELECT COUNT(*) AS c FROM certificates c
+     JOIN events e ON e.id = c.event_id
+     WHERE e.organizer_id = ? AND ${in30.replace('created_at', 'c.created_at')}`,
+    `SELECT COUNT(*) AS c FROM certificates c
+     JOIN events e ON e.id = c.event_id
+     WHERE e.organizer_id = ? AND ${prev30.replace('created_at', 'c.created_at')}`,
+    organizerId,
+  );
+
+  return {
+    totalEvents: { value: totalEvents, delta: windowDelta(ev.recent, ev.previous) },
+    activeRegistrations: { value: activeRegistrations, delta: windowDelta(reg.recent, reg.previous) },
+    projectsSubmitted: { value: projectsSubmitted, delta: windowDelta(proj.recent, proj.previous) },
+    certificatesIssued: { value: certificatesIssued, delta: windowDelta(cert.recent, cert.previous) },
+  };
 }
 
 async function getEventCardStats(eventId: string): Promise<EventCardStats> {
@@ -94,23 +151,31 @@ async function getEventCardStats(eventId: string): Promise<EventCardStats> {
   return { approvedTeams, pendingTeams, projects };
 }
 
+interface SectionData<T> {
+  items: T[];
+  total: number;
+}
+
 async function getDashboardInsights(orgId: string): Promise<{
-  deadlines: DeadlineEvent[];
-  registrations: RecentTeam[];
-  pendingTeams: DashboardPendingTeam[];
-  submissions: DashboardSubmission[];
-  activity: ActivityEntry[];
+  deadlines: SectionData<DeadlineEvent>;
+  registrations: SectionData<RecentTeam>;
+  pendingTeams: SectionData<DashboardPendingTeam>;
+  submissions: SectionData<DashboardSubmission>;
+  activity: SectionData<ActivityEntry>;
 }> {
   const db = getDb();
+  const asCount = (v: unknown) => (v as { c: number }).c;
 
-  const deadlines = (await db
+  const deadlineRows = (await db
     .prepare(
       `SELECT id, name, end_date FROM events
        WHERE organizer_id = ? AND status = 'published'
          AND end_date IS NOT NULL AND TRIM(end_date) <> ''
-       ORDER BY end_date ASC LIMIT 20`,
+       ORDER BY end_date ASC`,
     )
     .all(orgId)) as DeadlineEvent[];
+  const upcoming = filterUpcomingDeadlines(deadlineRows);
+  const totalUpcoming = filterUpcomingDeadlines(deadlineRows, Number.MAX_SAFE_INTEGER).length;
 
   const registrations = (await db
     .prepare(
@@ -120,6 +185,14 @@ async function getDashboardInsights(orgId: string): Promise<{
        ORDER BY t.created_at DESC LIMIT 8`,
     )
     .all(orgId)) as RecentTeam[];
+  const totalRegistrations = asCount(
+    await db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM teams t JOIN events e ON e.id = t.event_id
+         WHERE e.organizer_id = ?`,
+      )
+      .get(orgId),
+  );
 
   const pendingTeams = (await db
     .prepare(
@@ -129,6 +202,14 @@ async function getDashboardInsights(orgId: string): Promise<{
        ORDER BY t.created_at DESC LIMIT 12`,
     )
     .all(orgId)) as DashboardPendingTeam[];
+  const totalPending = asCount(
+    await db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM teams t JOIN events e ON e.id = t.event_id
+         WHERE e.organizer_id = ? AND t.approval_status = 'pending'`,
+      )
+      .get(orgId),
+  );
 
   const submissions = (await db
     .prepare(
@@ -140,6 +221,16 @@ async function getDashboardInsights(orgId: string): Promise<{
        ORDER BY p.created_at DESC LIMIT 8`,
     )
     .all(orgId)) as DashboardSubmission[];
+  const totalSubmissions = asCount(
+    await db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM projects p
+         JOIN teams t ON t.id = p.team_id
+         JOIN events e ON e.id = t.event_id
+         WHERE e.organizer_id = ?`,
+      )
+      .get(orgId),
+  );
 
   const activity = (await db
     .prepare(
@@ -149,31 +240,35 @@ async function getDashboardInsights(orgId: string): Promise<{
        ORDER BY a.created_at DESC LIMIT 15`,
     )
     .all(orgId)) as ActivityEntry[];
+  const totalActivity = asCount(
+    await db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM activity_log a JOIN events e ON e.id = a.event_id
+         WHERE e.organizer_id = ?`,
+      )
+      .get(orgId),
+  );
 
   return {
-    deadlines: filterUpcomingDeadlines(deadlines),
-    registrations,
-    pendingTeams,
-    submissions,
-    activity,
+    deadlines: { items: upcoming, total: totalUpcoming },
+    registrations: { items: registrations, total: totalRegistrations },
+    pendingTeams: { items: pendingTeams, total: totalPending },
+    submissions: { items: submissions, total: totalSubmissions },
+    activity: { items: activity, total: totalActivity },
   };
 }
 
-function StatTile({ icon, label, value, hint }: { icon: string; label: string; value: number; hint: string }) {
-  return (
-    <Card className="p-5 transition hover:shadow-md">
-      <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100 text-2xl" aria-hidden="true">
-          {icon}
-        </span>
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{label}</p>
-          <p className="text-3xl font-extrabold text-slate-900">{value.toLocaleString()}</p>
-        </div>
-      </div>
-      <p className="mt-3 text-xs text-slate-500">{hint}</p>
-    </Card>
-  );
+/**
+ * Delta badge props for the shared StatCard — only rendered when the
+ * 30-day-vs-previous-30-day change is honestly computable (never faked).
+ * deltaType carries the direction: green for growth, red for decline.
+ */
+function deltaProps(d: StatDelta): { delta?: string; deltaType?: 'up' | 'down' } {
+  if (d.pct === null) return {};
+  return {
+    delta: `${d.pct >= 0 ? '+' : ''}${d.pct.toFixed(1)}%`,
+    deltaType: d.pct >= 0 ? 'up' : 'down',
+  };
 }
 
 export default async function DashboardPage() {
@@ -195,66 +290,89 @@ export default async function DashboardPage() {
 
   return (
     <OrganizerShell organizer={org} active="overview">
-      <Container className="py-8 sm:py-10">
-        <PageHeader
-          title="Welcome back 👋"
-          subtitle={org.email}
-          action={<LinkButton href="/dashboard/events/new">➕ New event</LinkButton>}
-        />
+      <Container className="py-6 sm:py-8">
+        <DashboardGreeting name={org.name} />
 
         {/* stat tiles */}
         <section aria-label="Account statistics" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatTile icon="📅" label="Total events" value={stats.totalEvents} hint="Hackathons you've created" />
-          <StatTile
-            icon="👥"
+          <StatCard
+            label="Total events"
+            value={stats.totalEvents.value.toLocaleString()}
+            {...deltaProps(stats.totalEvents.delta)}
+            icon={<DsIcon name="calendar" />}
+            iconTint="indigo"
+            hint="Hackathons you've created"
+          />
+          <StatCard
             label="Active registrations"
-            value={stats.activeRegistrations}
+            value={stats.activeRegistrations.value.toLocaleString()}
+            {...deltaProps(stats.activeRegistrations.delta)}
+            icon={<DsIcon name="users" />}
+            iconTint="indigo"
             hint="Approved teams on published events"
           />
-          <StatTile
-            icon="🚀"
+          <StatCard
             label="Projects submitted"
-            value={stats.projectsSubmitted}
+            value={stats.projectsSubmitted.value.toLocaleString()}
+            {...deltaProps(stats.projectsSubmitted.delta)}
+            icon={<DsIcon name="rocket" />}
+            iconTint="emerald"
             hint="Across all your events"
           />
-          <StatTile
-            icon="🎓"
+          <StatCard
             label="Certificates issued"
-            value={stats.certificatesIssued}
+            value={stats.certificatesIssued.value.toLocaleString()}
+            {...deltaProps(stats.certificatesIssued.delta)}
+            icon={<DsIcon name="trophy" />}
+            iconTint="amber"
             hint="QR-verified participant certificates"
           />
         </section>
 
         {/* insight sections */}
-        <section aria-label="Insights" className="mt-10">
+        <section aria-label="Insights" className="mt-8">
           <div className="grid gap-4 lg:grid-cols-2">
-            <UpcomingDeadlines events={insights.deadlines} viewAllHref="/dashboard#events" />
-            <RecentRegistrations teams={insights.registrations} viewAllHref="/dashboard#events" />
+            <UpcomingDeadlines
+              events={insights.deadlines.items}
+              total={insights.deadlines.total}
+              viewAllHref="/dashboard#events"
+            />
+            <RecentRegistrations
+              teams={insights.registrations.items}
+              total={insights.registrations.total}
+              viewAllHref="/dashboard#events"
+            />
             <DashboardPendingApprovals
-              teams={insights.pendingTeams}
+              teams={insights.pendingTeams.items}
+              total={insights.pendingTeams.total}
               viewAllHref={
-                insights.pendingTeams[0]
-                  ? `/dashboard/events/${insights.pendingTeams[0].event_id}#teams`
+                insights.pendingTeams.items[0]
+                  ? `/dashboard/events/${insights.pendingTeams.items[0].event_id}#teams`
                   : '/dashboard#events'
               }
             />
-            <LatestSubmissions projects={insights.submissions} viewAllHref="/dashboard#events" />
+            <LatestSubmissions
+              projects={insights.submissions.items}
+              total={insights.submissions.total}
+              viewAllHref="/dashboard#events"
+            />
           </div>
           <div className="mt-4">
-            <ActivityFeed entries={insights.activity} />
+            <ActivityFeed entries={insights.activity.items} total={insights.activity.total} />
           </div>
         </section>
 
         {/* events */}
-        <section id="events" aria-label="Your events" className="mt-10 scroll-mt-24">
+        <section id="events" aria-label="Your events" className="mt-8 scroll-mt-24">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">Your events</h2>
+            <h2 className="text-[15px] font-semibold text-slate-900">Your events</h2>
             {events.length > 0 && (
               <a
                 href="/dashboard/events/new"
-                className="text-sm font-semibold text-indigo-600 transition hover:text-indigo-800 hover:underline"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 transition hover:text-indigo-800 hover:underline"
               >
-                ➕ New event
+                <DashIcon name="plus" className="h-3.5 w-3.5" />
+                New event
               </a>
             )}
           </div>
@@ -262,11 +380,10 @@ export default async function DashboardPage() {
           {events.length === 0 ? (
             <Card className="p-6 sm:p-10">
               <EmptyState
-                icon="🚀"
+                icon={<DsIcon name="rocket" className="h-6 w-6" />}
                 title="No events yet"
-                description="Create your first hackathon and share the public link with participants. Registrations, project submissions and judging are all handled for you."
-                actionLabel="➕ Create your first event"
-                actionHref="/dashboard/events/new"
+                text="Create your first hackathon and share the public link with participants. Registrations, project submissions and judging are all handled for you."
+                action={<LinkButton href="/dashboard/events/new">Create your first event</LinkButton>}
               />
               <div className="flex justify-center">
                 <SeedDemoButton />
@@ -291,8 +408,11 @@ export default async function DashboardPage() {
                 href="/dashboard/events/new"
                 className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-indigo-300 bg-indigo-50/40 p-6 text-center transition hover:border-indigo-500 hover:bg-indigo-50"
               >
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-3xl text-white shadow-sm" aria-hidden="true">
-                  ➕
+                <span
+                  className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm"
+                  aria-hidden="true"
+                >
+                  <DashIcon name="plus" className="h-7 w-7" />
                 </span>
                 <p className="mt-4 text-lg font-bold text-slate-900">New event</p>
                 <p className="mt-1 max-w-[220px] text-sm text-slate-500">

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Card } from '@/components/ui';
+import { Card, DsIcon } from '@/components/ui';
 import EmptyState from '@/components/EmptyState';
+import { SectionHeader, DashIcon } from './icons';
 import { timeAgo } from '@/lib/format';
 
 export interface DashboardPendingTeam {
@@ -22,9 +23,11 @@ export interface DashboardPendingTeam {
  */
 export default function PendingApprovals({
   teams: initialTeams,
+  total,
   viewAllHref,
 }: {
   teams: DashboardPendingTeam[];
+  total: number;
   viewAllHref?: string;
 }) {
   const [teams, setTeams] = useState<DashboardPendingTeam[]>(initialTeams);
@@ -55,24 +58,26 @@ export default function PendingApprovals({
 
   return (
     <Card className="p-6 transition hover:shadow-md">
-      <div className="mb-5 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <h2 className="text-lg font-bold tracking-tight text-slate-900">⏳ Pending approvals</h2>
-          {teams.length > 0 && (
-            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
-              {teams.length} awaiting review
-            </span>
-          )}
-        </div>
-        {viewAllHref && (
-          <a
-            href={viewAllHref}
-            className="text-sm font-semibold text-indigo-600 transition hover:text-indigo-800 hover:underline"
-          >
-            View all →
-          </a>
-        )}
-      </div>
+      <SectionHeader
+        icon="hourglass"
+        tint="amber"
+        title="Pending approvals"
+        meta={
+          teams.length > 0 ? (
+            <p className="flex items-center gap-2 text-xs text-slate-400">
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 font-bold text-amber-800">
+                {teams.length} awaiting review
+              </span>
+              {total > teams.length && (
+                <span>
+                  Showing {teams.length} of {total}
+                </span>
+              )}
+            </p>
+          ) : undefined
+        }
+        viewAllHref={viewAllHref}
+      />
 
       {error && (
         <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -82,9 +87,9 @@ export default function PendingApprovals({
 
       {teams.length === 0 ? (
         <EmptyState
-          icon="✅"
+          icon={<DsIcon name="check" className="h-6 w-6" />}
           title="All caught up"
-          description="No teams waiting for approval. New registrations that need review will appear here."
+          text="No teams waiting for approval. New registrations that need review will appear here."
           compact
         />
       ) : (
@@ -95,7 +100,7 @@ export default function PendingApprovals({
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3.5 transition hover:border-amber-300 hover:bg-amber-50"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-slate-900">{t.name}</p>
+                <p className="truncate text-sm font-semibold text-slate-900">{t.name}</p>
                 <p className="mt-0.5 truncate text-xs text-slate-500">
                   {t.event_name} · {t.contact_name || '—'} · {timeAgo(t.created_at)}
                 </p>
@@ -105,16 +110,18 @@ export default function PendingApprovals({
                   type="button"
                   disabled={busyId === t.id}
                   onClick={() => decide(t, 'approve')}
-                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
                 >
-                  {busyId === t.id ? 'Working…' : '✓ Approve'}
+                  <DashIcon name="check" className="h-3.5 w-3.5" />
+                  {busyId === t.id ? 'Working…' : 'Approve'}
                 </button>
                 <button
                   type="button"
                   disabled={busyId === t.id}
                   onClick={() => decide(t, 'reject')}
-                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50 disabled:opacity-60"
                 >
+                  <DashIcon name="x" className="h-3.5 w-3.5" />
                   Reject
                 </button>
               </div>

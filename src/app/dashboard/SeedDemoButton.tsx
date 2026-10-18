@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { DashIcon } from '@/components/dashboard/icons';
 
 /**
  * One-click demo data: creates 2 realistic closed past events (teams, projects,
@@ -38,9 +39,10 @@ export default function SeedDemoButton() {
         type="button"
         onClick={onClick}
         disabled={busy}
-        className="rounded-xl border border-dashed border-indigo-300 bg-indigo-50/60 px-5 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-60"
+        className="inline-flex items-center gap-2 rounded-xl border border-dashed border-indigo-300 bg-indigo-50/60 px-5 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-60"
       >
-        {busy ? 'Loading samples…' : '✨ Load sample past events'}
+        <DashIcon name="sparkles" className="h-4 w-4" />
+        {busy ? 'Loading samples…' : 'Load sample past events'}
       </button>
       {error && <p className="mt-2 text-sm text-rose-600">{error}</p>}
       <p className="mt-2 text-xs text-slate-400">

@@ -1,5 +1,6 @@
 import { formatDate } from '@/lib/format';
 import type { EventRow } from '@/lib/types';
+import { DashIcon } from '@/components/dashboard/icons';
 
 const STATUS_STYLES: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-700 ring-gray-200',
@@ -80,7 +81,7 @@ export default function EventCard({
       <div className="flex flex-1 flex-col p-5">
         <h3 className="text-lg font-bold leading-snug text-slate-900">{event.name}</h3>
         <p className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-500">
-          <span aria-hidden="true">📅</span>
+          <DashIcon name="calendar" className="h-4 w-4 text-slate-400" />
           <span className="font-medium text-slate-700">
             {formatDateRange(event.start_date, event.end_date)}
           </span>
@@ -89,11 +90,11 @@ export default function EventCard({
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-slate-600">
           <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden="true">👥</span>
+            <DashIcon name="users" className="h-4 w-4 text-slate-400" />
             <strong className="text-slate-900">{teams.toLocaleString()}</strong> teams
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden="true">🚀</span>
+            <DashIcon name="rocket" className="h-4 w-4 text-slate-400" />
             <strong className="text-slate-900">{projects.toLocaleString()}</strong> projects
           </span>
           {pendingTeams > 0 && (
@@ -112,14 +113,16 @@ export default function EventCard({
             href={manageHref}
             className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(79,70,229,0.35)] transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
           >
-            ⚙️ Manage event
+            <DashIcon name="settings" className="h-4 w-4" />
+            Manage event
           </a>
           <div className="mt-2 grid grid-cols-2 gap-2">
             <a
               href={`${manageHref}/analytics`}
               className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
             >
-              📊 Analytics
+              <DashIcon name="chart" className="h-4 w-4" />
+              Analytics
             </a>
             <a
               href={`/e/${event.slug}/live`}
@@ -127,7 +130,8 @@ export default function EventCard({
               rel="noreferrer"
               className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
             >
-              🖥️ Live
+              <DashIcon name="monitor" className="h-4 w-4" />
+              Live
             </a>
           </div>
         </div>

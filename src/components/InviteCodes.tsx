@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Card, Button } from '@/components/ui';
+import { IconChip } from '@/components/dashboard/icons';
 
 type Invite = { code: string; used_by: string | null; created_at: string; used_at: string | null };
 
@@ -42,13 +43,16 @@ export default function InviteCodes() {
 
   return (
     <Card className="p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-bold text-slate-900">🔑 Organizer invite codes</h3>
-          <p className="mt-1 text-sm text-slate-500">
-            New organizer accounts require an invite code. Share a code with trusted team members
-            only.
-          </p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <IconChip icon="key" tint="violet" size="md" />
+          <div>
+            <h3 className="text-[15px] font-semibold text-slate-900">Organizer invite codes</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              New organizer accounts require an invite code. Share a code with trusted team members
+              only.
+            </p>
+          </div>
         </div>
         <Button onClick={generate} disabled={busy}>
           {busy ? 'Generating…' : '+ New code'}

@@ -1,5 +1,6 @@
-import { Card } from '@/components/ui';
+import { Card, DsIcon } from '@/components/ui';
 import EmptyState from '@/components/EmptyState';
+import { SectionHeader, DashIcon } from './icons';
 import { formatDate } from '@/lib/format';
 
 export interface DeadlineEvent {
@@ -48,63 +49,68 @@ export function filterUpcomingDeadlines(events: DeadlineEvent[], limit = 5): Dea
 /** Upcoming deadlines for published events, with server-side countdowns. */
 export default function UpcomingDeadlines({
   events,
+  total,
   viewAllHref,
 }: {
   events: DeadlineEvent[];
+  total: number;
   viewAllHref?: string;
 }) {
   return (
     <Card className="p-6 transition hover:shadow-md">
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className="text-lg font-bold tracking-tight text-slate-900">⏰ Upcoming deadlines</h2>
-        {viewAllHref && (
-          <a
-            href={viewAllHref}
-            className="text-sm font-semibold text-indigo-600 transition hover:text-indigo-800 hover:underline"
-          >
-            View all →
-          </a>
-        )}
-      </div>
+      <SectionHeader
+        icon="clock"
+        tint="amber"
+        title="Upcoming deadlines"
+        meta={
+          total > 0 && (
+            <p className="text-xs text-slate-400">
+              Showing {events.length} of {total}
+            </p>
+          )
+        }
+        viewAllHref={viewAllHref}
+      />
       {events.length === 0 ? (
         <EmptyState
-          icon="📅"
+          icon={<DsIcon name="calendar" className="h-6 w-6" />}
           title="No upcoming deadlines"
-          description="Publish an event with an end date and it will show up here with a live countdown."
+          text="Publish an event with an end date and it will show up here with a live countdown."
           compact
         />
       ) : (
         <ul className="space-y-2.5">
-          {events.map((e) => (
-            <li key={e.id}>
-              <a
-                href={`/dashboard/events/${e.id}`}
-                className="flex items-center gap-3.5 rounded-xl border border-slate-100 bg-white px-4 py-3.5 transition hover:border-indigo-200 hover:bg-indigo-50/60 hover:shadow-sm"
-              >
-                <span
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl ${
-                    isUrgent(e.end_date) ? 'bg-amber-100' : 'bg-indigo-100'
-                  }`}
-                  aria-hidden="true"
+          {events.map((e) => {
+            const urgent = isUrgent(e.end_date);
+            return (
+              <li key={e.id}>
+                <a
+                  href={`/dashboard/events/${e.id}`}
+                  className="flex items-center gap-3.5 rounded-xl border border-slate-100 bg-white px-4 py-3.5 transition hover:border-indigo-200 hover:bg-indigo-50/60 hover:shadow-sm"
                 >
-                  ⏰
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-slate-900">{e.name}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">Ends {formatDate(e.end_date)}</p>
-                </div>
-                <span
-                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
-                    isUrgent(e.end_date)
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-indigo-100 text-indigo-700'
-                  }`}
-                >
-                  {countdown(e.end_date)}
-                </span>
-              </a>
-            </li>
-          ))}
+                  <span
+                    className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                      urgent ? 'bg-amber-100 text-amber-600' : 'bg-indigo-100 text-indigo-600'
+                    }`}
+                    aria-hidden="true"
+                  >
+                    <DashIcon name="clock" className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-900">{e.name}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">Ends {formatDate(e.end_date)}</p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
+                      urgent ? 'bg-amber-100 text-amber-800' : 'bg-indigo-100 text-indigo-700'
+                    }`}
+                  >
+                    {countdown(e.end_date)}
+                  </span>
+                </a>
+              </li>
+            );
+          })}
         </ul>
       )}
     </Card>

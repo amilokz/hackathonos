@@ -379,8 +379,8 @@ export default function OrganizerShellNav({
 
   return (
     <>
-      {/* Top bar */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
+      {/* Top bar — solid white with a hairline bottom border per design tokens. */}
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
         <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
@@ -448,9 +448,9 @@ export default function OrganizerShellNav({
         </div>
       </aside>
 
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar — fixed 260px, dark navy #0F172A */}
       <aside
-        className="fixed inset-y-0 left-0 z-20 hidden w-64 shrink-0 flex-col bg-slate-900 p-5 pt-20 lg:flex"
+        className="fixed inset-y-0 left-0 z-20 hidden w-[260px] shrink-0 flex-col bg-slate-900 p-5 pt-20 lg:flex"
         aria-label="Organizer navigation"
       >
         <div className="min-h-0 flex-1">
