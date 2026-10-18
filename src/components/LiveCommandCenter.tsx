@@ -248,6 +248,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
         @keyframes hcc-glow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
         .hcc-marquee-track { display: flex; width: max-content; animation: hcc-marquee 30s linear infinite; }
         .hcc-marquee-slow { animation-duration: 45s; }
+        .hcc-marquee-ticker { animation-duration: 50s; }
         .hcc-rise { animation: hcc-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
         .hcc-blink { animation: hcc-blink 1s step-start infinite; }
         .hcc-glow { animation: hcc-glow 2.4s ease-in-out infinite; }
@@ -397,56 +398,33 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
         </div>
       </section>
 
-      {/* ── Announcements ticker ───────────────────────────── */}
-      <section className="flex shrink-0 items-center overflow-hidden border-y border-slate-800 bg-slate-900 py-2.5 md:py-3">
-        <div className="z-10 flex shrink-0 items-center gap-2 border-r border-slate-700 bg-slate-900 px-3 py-1 md:gap-2.5 md:px-5">
-          <Icon name="megaphone" className="h-4 w-4 text-amber-300 md:h-5 md:w-5" />
-          <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-300 md:text-sm">
-            Live
-          </span>
-        </div>
-        <div className="hcc-marquee-track min-w-0 flex-1 items-center gap-10">
-          {[0, 1].map((copy) => (
-            <div key={copy} className="flex items-center gap-10" aria-hidden={copy === 1}>
-              {tickerItems.map((msg, i) => (
-                <span key={`${copy}-${i}`} className="flex items-center gap-10 whitespace-nowrap">
-                  <span className="flex items-center gap-3 text-base font-semibold text-indigo-200 md:gap-4 md:text-2xl">
-                    <Icon name="megaphone" className="h-5 w-5 shrink-0 text-indigo-400 md:h-6 md:w-6" />
-                    {msg}
-                  </span>
-                  <span className="text-slate-600">•</span>
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ── Judging progress bar ───────────────────────────── */}
-      <section className="w-full shrink-0 px-4 pt-3 md:px-8 md:pt-4">
+      <section className="w-full shrink-0 px-4 pb-2 pt-4 md:px-8 md:pb-3 md:pt-6">
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-400 md:text-sm">
           <span className="min-w-0 truncate">
             Judging progress · {data.scoredCells}/{data.totalCells} scores
           </span>
-          <span className="shrink-0 tabular-nums text-indigo-300">{data.judgingPct}%</span>
+          <span className="shrink-0 rounded-full bg-indigo-500/15 px-2.5 py-0.5 font-black tabular-nums text-indigo-200 ring-1 ring-indigo-500/40">
+            {data.judgingPct}%
+          </span>
         </div>
-        <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-800 md:h-4">
+        <div className="mt-2.5 h-3 overflow-hidden rounded-full bg-slate-800 ring-1 ring-slate-700/60 md:h-4">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-400 transition-all duration-1000"
+            className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400 shadow-[0_0_12px_rgba(99,102,241,0.7)] transition-all duration-1000"
             style={{ width: `${data.judgingPct}%` }}
           />
         </div>
       </section>
 
       {/* ── Podium ─────────────────────────────────────────── */}
-      <section className="flex min-h-0 w-full flex-1 flex-col justify-center px-4 py-2 md:px-8">
+      <section className="flex min-h-0 w-full flex-1 flex-col justify-center px-4 pb-16 pt-4 md:px-8 md:pb-20 md:pt-6">
         {data.podium ? (
           <div className="w-full">
-            <h2 className="mb-3 flex items-center justify-center gap-3 text-center text-lg font-black uppercase tracking-[0.2em] text-amber-300 md:mb-4 md:text-2xl">
+            <h2 className="mb-4 flex items-center justify-center gap-3 text-center text-lg font-black uppercase tracking-[0.2em] text-amber-300 md:mb-6 md:text-2xl">
               <Icon name="trophy" className="h-6 w-6 md:h-8 md:w-8" />
               Winners
             </h2>
-            <div className="flex items-end justify-center gap-3 md:gap-8">
+            <div className="flex items-end justify-center gap-4 md:gap-10">
               {podiumOrder.map((w, idx) => {
                 const rank = data.podium!.indexOf(w) + 1;
                 const s = podiumStyle(rank);
@@ -457,7 +435,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
                     style={{ animationDelay: s.delay }}
                   >
                     <MedalIcon rank={rank} />
-                    <div className="mb-3 mt-2 w-full rounded-xl bg-slate-900/70 px-2 py-1.5 text-center ring-1 ring-slate-800">
+                    <div className="mb-4 mt-3 w-full rounded-xl bg-slate-900/70 px-2 py-1.5 text-center ring-1 ring-slate-800">
                       <div className="truncate text-sm font-black md:text-xl">{w.team_name}</div>
                       <div className="truncate text-[10px] text-slate-400 md:text-xs">{w.title}</div>
                       <div className="text-xs font-bold tabular-nums text-indigo-300 md:text-base">
@@ -465,7 +443,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
                       </div>
                       {w.breakdown.length > 0 && (
                         <div
-                          className="mt-0.5 truncate text-[10px] tabular-nums text-slate-500 md:text-xs"
+                          className="mt-0.5 truncate text-[10px] font-bold tabular-nums text-slate-400 md:text-xs"
                           title={w.breakdown
                             .map((b) => `${b.criterion}: ${b.average.toFixed(1)} / 10`)
                             .join(' · ')}
@@ -497,7 +475,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
             <p className="relative mt-4 text-xl font-black tracking-wide text-slate-100 md:text-3xl">
               Winners will be revealed here
             </p>
-            <p className="relative mt-2 text-sm text-slate-500 md:text-base">
+            <p className="relative mt-2 text-sm text-slate-400 md:text-base">
               {data.status === 'closed'
                 ? 'Results are being finalized…'
                 : 'Stay tuned — the podium appears when judging closes.'}
@@ -508,28 +486,28 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
 
       {/* ── Sponsor strip ──────────────────────────────────── */}
       {data.sponsors.length > 0 && (
-        <section className="w-full shrink-0 overflow-hidden border-t border-slate-800 bg-slate-900/60 py-2 md:py-3">
-          <div className="mb-1 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 md:text-xs">
+        <section className="w-full shrink-0 overflow-hidden border-t border-slate-800 bg-slate-900/60 py-2.5 md:py-3.5">
+          <div className="mb-1.5 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 md:text-xs">
             Sponsors
           </div>
-          <div className="hcc-marquee-track hcc-marquee-slow items-center gap-12">
+          <div className="hcc-marquee-track hcc-marquee-slow items-center gap-16">
             {[0, 1].map((copy) => (
-              <div key={copy} className="flex items-center gap-12" aria-hidden={copy === 1}>
+              <div key={copy} className="flex shrink-0 items-center gap-16" aria-hidden={copy === 1}>
                 {data.sponsors.map((sp, i) => (
                   <span
                     key={`${copy}-${i}`}
-                    className="flex items-center gap-2 whitespace-nowrap text-base font-bold text-slate-300 md:text-xl"
+                    className="flex shrink-0 items-center gap-2.5 whitespace-nowrap text-base font-bold text-slate-200 md:text-xl"
                   >
                     {sp.logo_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={sp.logo_url}
                         alt={sp.name}
-                        className="h-7 w-auto object-contain md:h-9"
+                        className="h-7 w-auto max-w-36 object-contain md:h-9 md:max-w-48"
                       />
                     ) : null}
                     {sp.name}
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-600">
+                    <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       {sp.tier}
                     </span>
                   </span>
@@ -540,11 +518,38 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
         </section>
       )}
 
+      {/* ── Announcements ticker (bottom band) ─────────────── */}
+      <section className="flex h-12 max-h-12 shrink-0 items-center overflow-hidden border-t border-slate-800 bg-slate-900/80">
+        <div className="z-10 flex h-full shrink-0 items-center gap-2 border-r border-slate-700 bg-slate-900 px-3 md:gap-2.5 md:px-5">
+          <Icon name="megaphone" className="h-4 w-4 text-amber-300 md:h-5 md:w-5" />
+          <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-300 md:text-sm">
+            Live
+          </span>
+        </div>
+        <div className="hcc-marquee-track hcc-marquee-ticker min-w-0 flex-1 items-center gap-10">
+          {[0, 1].map((copy) => (
+            <div key={copy} className="flex shrink-0 items-center gap-10" aria-hidden={copy === 1}>
+              {tickerItems.map((msg, i) => (
+                <span
+                  key={`${copy}-${i}`}
+                  className="flex shrink-0 items-center gap-3 whitespace-nowrap text-sm font-semibold text-slate-200 md:gap-4 md:text-lg"
+                >
+                  <Icon name="megaphone" className="h-4 w-4 shrink-0 text-indigo-400 md:h-5 md:w-5" />
+                  {msg}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── Footer (hidden in kiosk) ───────────────────────── */}
       {!kiosk && (
-        <footer className="shrink-0 border-t border-slate-800 bg-slate-950 py-2 text-center text-xs text-slate-500">
-          Powered by <span className="font-semibold text-slate-400">HackathonOS</span> · refreshing
-          every 15s
+        <footer className="flex h-10 shrink-0 items-center justify-center border-t border-slate-800 bg-slate-950 px-4 md:h-12">
+          <p className="truncate whitespace-nowrap text-center text-xs text-slate-400 md:text-sm">
+            Powered by <span className="font-semibold text-slate-300">HackathonOS</span> · refreshing
+            every 15s
+          </p>
         </footer>
       )}
     </div>
