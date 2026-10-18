@@ -166,7 +166,7 @@ export default async function ManageEventPage({ params }: { params: { id: string
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           {/* Left sidebar */}
           <aside className="w-full shrink-0 lg:sticky lg:top-20 lg:w-64">
-            <Card className="space-y-6 p-4">
+            <Card className="light-scroll max-h-[calc(100vh-7rem)] space-y-6 overflow-y-auto p-4">
               <SidebarSection title="Setup" links={setupLinks} />
               <SidebarSection title="Manage" links={manageLinks} />
             </Card>
