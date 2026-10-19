@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
-import { requireOrganizer } from '@/lib/require-organizer';
+import { requireOrganizer, type Organizer } from '@/lib/require-organizer';
 import OrganizerShell from '@/components/OrganizerShell';
 import EventCard from '@/components/EventCard';
 import { Container, Card, LinkButton, StatCard, DsIcon } from '@/components/ui';
@@ -277,9 +277,9 @@ export default async function DashboardPage() {
   const org = await requireOrganizer();
   if (!org) redirect('/login');
 
-  // Defensive: surface the real DB error instead of a cryptic digest.
+  // Defensive: surface the real error instead of a cryptic digest.
   try {
-    await migrate();
+    return await renderDashboard(org);
   } catch (e) {
     return (
       <OrganizerShell organizer={org} active="overview" eventContext={null}>
@@ -287,7 +287,7 @@ export default async function DashboardPage() {
           <div className="rounded-xl border border-red-200 bg-red-50 p-6">
             <p className="font-semibold text-red-800">Dashboard could not load.</p>
             <p className="mt-1 text-sm text-red-600">
-              {e instanceof Error ? e.message : 'Unknown database error'}
+              {e instanceof Error ? e.message : 'Unknown error'}
             </p>
             <p className="mt-2 text-sm text-red-600">Please try refreshing the page.</p>
           </div>
@@ -295,6 +295,10 @@ export default async function DashboardPage() {
       </OrganizerShell>
     );
   }
+}
+
+async function renderDashboard(org: Organizer) {
+  await migrate();
   const db = getDb();
   const events = (await db
     .prepare('SELECT * FROM events WHERE organizer_id = ? ORDER BY created_at DESC')
