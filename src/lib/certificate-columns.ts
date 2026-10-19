@@ -31,17 +31,16 @@ export async function ensureCertificateColumns(): Promise<void> {
     'CREATE INDEX IF NOT EXISTS idx_certificate_templates_event ON certificate_templates(event_id)',
   );
 
-  const cols = (await db.prepare('PRAGMA table_info(certificates)').all()) as {
-    name: string;
-  }[];
-  const existing = new Set(cols.map((c) => c.name));
+  // Add columns idempotently: try ALTER directly and swallow "duplicate column"
+  // errors. (PRAGMA introspection proved unreliable on Turso — it can report
+  // a column as missing when it already exists.)
   const add = async (ddl: string) => {
-    await db.exec(`ALTER TABLE certificates ADD COLUMN ${ddl}`);
+    try {
+      await db.exec(`ALTER TABLE certificates ADD COLUMN ${ddl}`);
+    } catch (e) {
+      if (!/duplicate column/i.test(String((e as Error)?.message ?? e))) throw e;
+    }
   };
-  if (!existing.has('pdf_url')) {
-    await add("pdf_url TEXT DEFAULT ''");
-  }
-  if (!existing.has('template_id')) {
-    await add("template_id TEXT DEFAULT ''");
-  }
+  await add("pdf_url TEXT DEFAULT ''");
+  await add("template_id TEXT DEFAULT ''");
 }
