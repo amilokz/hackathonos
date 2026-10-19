@@ -12,6 +12,15 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
+/** Cache-busting cover URL: appends event updated_at so browsers fetch the new image after an update. */
+function coverSrc(url: string | null | undefined, updatedAt?: string | null): string {
+  if (!url?.trim()) return '';
+  const u = url.trim();
+  if (!updatedAt) return u;
+  const sep = u.includes('?') ? '&' : '?';
+  return `${u}${sep}v=${encodeURIComponent(updatedAt)}`;
+}
+
 function formatDate(iso: string): string {
   if (!iso) return "";
   const d = new Date(iso + "T00:00:00");
@@ -37,6 +46,7 @@ async function getPastEvents() {
     start_date: string;
     end_date: string;
     team_count: number;
+    updated_at: string;
   }>;
 }
 
@@ -45,7 +55,7 @@ async function getLiveEvents() {
   const db = getDb();
   return (await db
     .prepare(
-      `SELECT e.id, e.name, e.slug, e.cover_url, e.description, e.start_date, e.end_date,
+      `SELECT e.id, e.name, e.slug, e.cover_url, e.description, e.start_date, e.end_date, e.updated_at,
               (SELECT COUNT(*) FROM teams t WHERE t.event_id = e.id AND t.approval_status = 'approved') AS team_count
        FROM events e WHERE e.status = 'published'
        ORDER BY e.start_date ASC, e.created_at DESC`
@@ -55,6 +65,7 @@ async function getLiveEvents() {
     name: string;
     slug: string;
     cover_url: string;
+    updated_at: string;
     description: string;
     start_date: string;
     end_date: string;
@@ -316,7 +327,7 @@ function PastHackathons({ events }: { events: Awaited<ReturnType<typeof getPastE
                 >
                   {e.cover_url?.trim() ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={e.cover_url} alt={`${e.name} cover`} className="h-40 w-full object-cover" />
+                    <img src={coverSrc(e.cover_url, e.updated_at)} alt={`${e.name} cover`} className="h-40 w-full object-cover" />
                   ) : (
                     <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-indigo-100 via-violet-100 to-sky-100">
                       <span className="text-4xl">🏆</span>
@@ -453,7 +464,7 @@ function LiveNow({ events }: { events: Awaited<ReturnType<typeof getLiveEvents>>
               >
                 {e.cover_url?.trim() ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={e.cover_url} alt={`${e.name} cover`} className="h-44 w-full object-cover" />
+                  <img src={coverSrc(e.cover_url, e.updated_at)} alt={`${e.name} cover`} className="h-44 w-full object-cover" />
                 ) : (
                   <div className="flex h-44 w-full items-center justify-center bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600">
                     <span className="text-4xl">⚡</span>

@@ -90,7 +90,9 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
   const teams = (await db.prepare("SELECT COUNT(*) AS c FROM teams WHERE event_id = ? AND approval_status = 'approved'").get(event.id) as { c: number }).c;
 
   const dates = [formatDate(event.start_date), formatDate(event.end_date)].filter(Boolean).join(' → ');
-  const cover = event.cover_url?.trim() ? event.cover_url : null;
+  const coverRaw = event.cover_url?.trim() ? event.cover_url : null;
+  // Cache-busting: append updated_at so browsers fetch the new image after an organizer update.
+  const cover = coverRaw && event.updated_at ? `${coverRaw}${coverRaw.includes('?') ? '&' : '?'}v=${encodeURIComponent(event.updated_at)}` : coverRaw;
   const prizeLines = lines(event.prizes);
   const scheduleLines = lines(event.schedule);
   const faqItems = parseFaq(event.faq);
