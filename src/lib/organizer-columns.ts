@@ -12,13 +12,15 @@ import { getDb } from './db';
  */
 export async function ensureOrganizerColumns(): Promise<void> {
   const db = getDb();
-  const cols = (await db.prepare('PRAGMA table_info(organizers)').all()) as { name: string }[];
-  const existing = new Set(cols.map((c) => c.name));
-  const add = async (name: string, ddl: string) => {
-    if (!existing.has(name)) {
+  // Try ALTER directly and swallow "duplicate column" errors.
+  // (PRAGMA introspection proved unreliable on Turso.)
+  const add = async (ddl: string) => {
+    try {
       await db.exec(`ALTER TABLE organizers ADD COLUMN ${ddl}`);
+    } catch (e) {
+      if (!/duplicate column/i.test(String((e as Error)?.message ?? e))) throw e;
     }
   };
-  await add('plan', "plan TEXT DEFAULT 'free'");
-  await add('white_label_granted', 'white_label_granted INTEGER DEFAULT 0');
+  await add("plan TEXT DEFAULT 'free'");
+  await add('white_label_granted INTEGER DEFAULT 0');
 }

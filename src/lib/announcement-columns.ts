@@ -29,14 +29,15 @@ export interface AnnouncementRow {
 
 export async function ensureAnnouncementColumns(): Promise<void> {
   const db = getDb();
-  const cols = (await db.prepare('PRAGMA table_info(announcements)').all()) as { name: string }[];
-  const existing = new Set(cols.map((c) => c.name));
-  const add = async (name: string, ddl: string) => {
-    if (!existing.has(name)) {
+  // Try ALTER directly; swallow "duplicate column" (PRAGMA is unreliable on Turso).
+  const add = async (ddl: string) => {
+    try {
       await db.exec(`ALTER TABLE announcements ADD COLUMN ${ddl}`);
+    } catch (e) {
+      if (!/duplicate column/i.test(String((e as Error)?.message ?? e))) throw e;
     }
   };
-  await add('title', "title TEXT DEFAULT ''");
-  await add('pinned', 'pinned INTEGER DEFAULT 0');
-  await add('type', "type TEXT DEFAULT 'info'");
+  await add("title TEXT DEFAULT ''");
+  await add('pinned INTEGER DEFAULT 0');
+  await add("type TEXT DEFAULT 'info'");
 }
