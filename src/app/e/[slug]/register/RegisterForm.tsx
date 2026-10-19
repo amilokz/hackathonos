@@ -67,6 +67,9 @@ export default function RegisterForm({ eventId, eventSlug }: { eventId: string; 
   const [done, setDone] = useState(false);
   const [pending, setPending] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Prevents double-click on Continue from landing on the Step 3 submit button
+  // (both buttons render in the same spot).
+  const [navigating, setNavigating] = useState(false);
 
   function setMember(i: number, value: string) {
     setMembers((m) => m.map((x, idx) => (idx === i ? value : x)));
@@ -85,13 +88,17 @@ export default function RegisterForm({ eventId, eventSlug }: { eventId: string; 
   }
 
   function next() {
+    if (navigating) return;
     const err = validateStep(step);
     if (err) {
       setError(err);
       return;
     }
     setError(null);
+    setNavigating(true);
     setStep((s) => Math.min(3, s + 1));
+    // Re-enable after the step transition renders (submit button appears in the same spot)
+    setTimeout(() => setNavigating(false), 600);
   }
 
   function back() {
@@ -355,7 +362,8 @@ export default function RegisterForm({ eventId, eventSlug }: { eventId: string; 
               <button
                 type="button"
                 onClick={next}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--brand)] px-6 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-[var(--brand-dark)]"
+                disabled={navigating}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--brand)] px-6 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-[var(--brand-dark)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Continue
                 <DsIcon name="chevronRight" className="h-4 w-4" />
@@ -363,7 +371,7 @@ export default function RegisterForm({ eventId, eventSlug }: { eventId: string; 
             ) : (
               <button
                 type="submit"
-                disabled={busy}
+                disabled={busy || navigating}
                 className="inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-8 py-2.5 text-sm font-bold text-white shadow-md transition hover:bg-[var(--brand-dark)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busy ? (
