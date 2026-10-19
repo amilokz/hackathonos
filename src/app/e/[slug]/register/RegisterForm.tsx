@@ -101,6 +101,11 @@ export default function RegisterForm({ eventId, eventSlug }: { eventId: string; 
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // If user pressed Enter before the last step, advance the wizard instead of submitting
+    if (step < 3) {
+      next();
+      return;
+    }
     const err = validateStep(1) ?? validateStep(2);
     if (err) {
       setError(err);
