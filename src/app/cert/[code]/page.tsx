@@ -3,7 +3,10 @@ import { notFound } from 'next/navigation';
 import QRCode from 'qrcode';
 import { getDb, migrate } from '@/lib/db';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
+import { ensureBrandingColumns } from '@/lib/branding-columns';
 import { formatLongDate } from '@/lib/format';
+import BrandTheme from '@/components/BrandTheme';
+import { brandName } from '@/lib/brand';
 import PrintButton from './PrintButton';
 
 export const dynamic = 'force-dynamic';
@@ -27,6 +30,7 @@ function getBaseUrl(): string {
 export default async function CertificatePage({ params }: { params: { code: string } }) {
   await migrate();
   await ensureSettingsColumns();
+  await ensureBrandingColumns();
   const code = params.code.trim().toUpperCase();
 
   const db = getDb();
@@ -34,6 +38,7 @@ export default async function CertificatePage({ params }: { params: { code: stri
     .prepare(
       `SELECT c.recipient_name, c.recipient_email, c.type, c.created_at, c.verification_code,
               e.name AS event_name, e.start_date, e.end_date, e.white_label, e.custom_footer_text,
+              e.brand_color, e.brand_name, e.brand_logo_url,
               o.name AS organizer_name
        FROM certificates c
        JOIN events e ON e.id = c.event_id
@@ -52,11 +57,17 @@ export default async function CertificatePage({ params }: { params: { code: stri
         end_date: string;
         white_label: number | null;
         custom_footer_text: string | null;
+        brand_color: string | null;
+        brand_name: string | null;
+        brand_logo_url: string | null;
         organizer_name: string;
       }
     | undefined;
 
   if (!cert) notFound();
+
+  const publicName = brandName(cert.brand_name, cert.event_name);
+  const brandLogo = (cert.brand_logo_url ?? '').trim();
 
   const verifyUrl = `${getBaseUrl()}/verify/${cert.verification_code}`;
   // QR generation must never break the certificate page — fall back to a
@@ -75,7 +86,7 @@ export default async function CertificatePage({ params }: { params: { code: stri
     : 'Powered by HackathonOS · Built by AKCLNT';
 
   return (
-    <div className="min-h-screen bg-slate-100 p-4 sm:p-8 print:bg-white print:p-0">
+    <BrandTheme color={cert.brand_color} className="min-h-screen bg-slate-100 p-4 sm:p-8 print:bg-white print:p-0">
       <div className="mx-auto mb-4 flex max-w-4xl items-center justify-between print:hidden">
         <a href="/" className="text-sm text-slate-500 hover:underline">
           ← HackathonOS
@@ -84,10 +95,16 @@ export default async function CertificatePage({ params }: { params: { code: stri
       </div>
 
       <div className="print-area mx-auto max-w-4xl bg-white p-8 shadow-xl sm:p-12 print:m-0 print:max-w-full print:shadow-none">
-        <div className="border-8 border-double border-indigo-500/60 p-8 text-center sm:p-12">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
-            {cert.event_name}
-          </p>
+        <div className="border-8 border-double border-[rgb(var(--brand-rgb)/0.6)] p-8 text-center sm:p-12">
+          <div className="mb-4 flex items-center justify-center gap-3">
+            {brandLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={brandLogo} alt={`${publicName} logo`} className="h-10 w-10 rounded-xl object-contain" />
+            ) : null}
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
+              {publicName}
+            </p>
+          </div>
           <h1 className="mt-4 font-serif text-4xl font-bold text-slate-900 sm:text-5xl">{title}</h1>
           <p className="mt-6 text-sm uppercase tracking-widest text-slate-500">
             Proudly presented to
@@ -121,7 +138,7 @@ export default async function CertificatePage({ params }: { params: { code: stri
                   <p className="mt-1 text-[10px] text-slate-400">Scan to verify</p>
                 </>
               ) : (
-                <a href={verifyUrl} className="text-xs font-semibold text-indigo-600 underline">
+                <a href={verifyUrl} className="text-xs font-semibold text-[var(--brand)] underline">
                   Verify online →
                 </a>
               )}
@@ -133,6 +150,6 @@ export default async function CertificatePage({ params }: { params: { code: stri
           <p className="mt-4 text-center text-[11px] text-slate-400">{footer}</p>
         ) : null}
       </div>
-    </div>
+    </BrandTheme>
   );
 }

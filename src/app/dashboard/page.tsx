@@ -5,6 +5,8 @@ import OrganizerShell from '@/components/OrganizerShell';
 import EventCard from '@/components/EventCard';
 import { Container, Card, LinkButton, StatCard, DsIcon } from '@/components/ui';
 import EmptyState from '@/components/EmptyState';
+import { planLabel, PLAN_PRO, PLAN_ENTERPRISE } from '@/lib/plans';
+import { isWhiteLabelEligible } from '@/lib/white-label';
 import { DashIcon } from '@/components/dashboard/icons';
 import DashboardGreeting from '@/components/dashboard/DashboardGreeting';
 import SeedDemoButton from './SeedDemoButton';
@@ -331,6 +333,54 @@ export default async function DashboardPage() {
             iconTint="amber"
             hint="QR-verified participant certificates"
           />
+        </section>
+
+        {/* plan */}
+        <section aria-label="Plan" className="mt-6">
+          <Card className="p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h2 className="text-[15px] font-semibold text-slate-900">Your plan</h2>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${
+                      org.plan === PLAN_ENTERPRISE
+                        ? 'bg-amber-100 text-amber-800'
+                        : org.plan === PLAN_PRO
+                          ? 'bg-indigo-100 text-indigo-800'
+                          : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {planLabel(org.plan)}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-sm text-slate-600">
+                    <DsIcon name="lock" className="h-4 w-4 text-slate-400" />
+                    White label:{' '}
+                    <span className="font-semibold text-slate-900">
+                      {isWhiteLabelEligible(org.plan, org.white_label_granted)
+                        ? 'Unlocked'
+                        : 'Pro feature'}
+                    </span>
+                  </span>
+                </div>
+                {org.white_label_granted === 1 && org.plan === 'free' && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    White label was granted to your account by the platform owner.
+                  </p>
+                )}
+              </div>
+              <div className="max-w-md">
+                <p className="text-sm font-medium text-slate-700">How to upgrade</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  Plans are upgraded manually for now — contact the platform owner, or if you
+                  are the owner, run:
+                </p>
+                <code className="mt-2 block overflow-x-auto rounded-lg bg-slate-900 px-3 py-2 text-xs text-slate-100">
+                  UPDATE organizers SET plan=&apos;pro&apos; WHERE email=&apos;you@example.com&apos;;
+                </code>
+              </div>
+            </div>
+          </Card>
         </section>
 
         {/* insight sections */}

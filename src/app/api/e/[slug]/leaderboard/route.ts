@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
+import { ensureBrandingColumns } from '@/lib/branding-columns';
+import { ensureOrganizerColumns } from '@/lib/organizer-columns';
+import { eventWhiteLabelActive } from '@/lib/white-label';
 import { computeResults } from '@/lib/results';
 
 /**
@@ -12,9 +15,16 @@ export async function GET(
   { params }: { params: { slug: string } }
 ) {
   await ensureSettingsColumns();
-  const event = await getDb().prepare('SELECT id, name, slug, description, status, white_label, custom_footer_text FROM events WHERE slug = ?').get(
+  await ensureBrandingColumns();
+  await ensureOrganizerColumns();
+  const event = await getDb().prepare(
+    `SELECT e.id, e.name, e.slug, e.description, e.status, e.white_label, e.custom_footer_text,
+            e.brand_color, e.brand_name, e.brand_logo_url,
+            o.plan AS organizer_plan, o.white_label_granted AS organizer_white_label_granted
+     FROM events e JOIN organizers o ON o.id = e.organizer_id WHERE e.slug = ?`
+  ).get(
     params.slug
-  ) as { id: string; name: string; slug: string; description: string; status: string; white_label: number | null; custom_footer_text: string | null } | undefined;
+  ) as { id: string; name: string; slug: string; description: string; status: string; white_label: number | null; custom_footer_text: string | null; brand_color: string | null; brand_name: string | null; brand_logo_url: string | null; organizer_plan: string | null; organizer_white_label_granted: number | null } | undefined;
 
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
   // Leaderboard is public only for published/closed events — drafts stay private.
@@ -74,8 +84,16 @@ export async function GET(
         slug: event.slug,
         description: event.description,
         status: event.status,
-        white_label: Boolean(event.white_label),
+        // Paid feature: white label renders only when the event toggle is on
+        // AND the organizer's plan (or manual grant) allows it.
+        white_label: eventWhiteLabelActive(event, {
+          plan: event.organizer_plan,
+          white_label_granted: event.organizer_white_label_granted,
+        }),
         custom_footer_text: event.custom_footer_text ?? '',
+        brand_color: event.brand_color ?? '#4F46E5',
+        brand_name: event.brand_name ?? '',
+        brand_logo_url: event.brand_logo_url ?? '',
       },
       results,
       judging_progress: { scored: scoredCells, total: totalCells, pct: judgingPct },

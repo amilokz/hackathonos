@@ -28,6 +28,11 @@ export interface EventRow {
   custom_footer_text?: string | null;
   // Team-approval gating (added via migrate(); defaults to 0 on old rows).
   require_team_approval?: number | null;
+  // Event branding/theming (added via ensureBrandingColumns(); may be
+  // absent on very old rows — always read defensively).
+  brand_color?: string | null;
+  brand_logo_url?: string | null;
+  brand_name?: string | null;
   created_at: string;
 }
 

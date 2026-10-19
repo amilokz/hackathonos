@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
 import { ensureAnnouncementColumns } from '@/lib/announcement-columns';
+import { ensureBrandingColumns } from '@/lib/branding-columns';
 import { computeResults } from '@/lib/results';
 import LiveCommandCenter, { type LiveData } from '@/components/LiveCommandCenter';
 
@@ -28,12 +29,13 @@ export default async function LivePage({
 }) {
   await migrate();
   await ensureAnnouncementColumns();
+  await ensureBrandingColumns();
   const db = getDb();
 
   const event = (await db
-    .prepare('SELECT id, name, slug, status, end_date FROM events WHERE slug = ?')
+    .prepare('SELECT id, name, slug, status, end_date, brand_color, brand_name, brand_logo_url FROM events WHERE slug = ?')
     .get(params.slug)) as
-    | { id: string; name: string; slug: string; status: string; end_date: string }
+    | { id: string; name: string; slug: string; status: string; end_date: string; brand_color: string | null; brand_name: string | null; brand_logo_url: string | null }
     | undefined;
   // Only published/closed events have a public live page (same visibility as /e/[slug]).
   if (!event || (event.status !== 'published' && event.status !== 'closed')) notFound();
@@ -124,6 +126,9 @@ export default async function LivePage({
     eventName: event.name,
     eventSlug: event.slug,
     status: event.status,
+    brandColor: event.brand_color,
+    brandName: event.brand_name,
+    brandLogoUrl: event.brand_logo_url,
     deadlineIso: toDeadlineIso(event.end_date),
     teamsCount,
     projectsCount,

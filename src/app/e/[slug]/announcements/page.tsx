@@ -1,6 +1,9 @@
 import { notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
+import { ensureSettingsColumns } from '@/lib/settings-columns';
+import { ensureOrganizerColumns } from '@/lib/organizer-columns';
 import { ensureAnnouncementColumns, type AnnouncementRow } from '@/lib/announcement-columns';
+import { eventWhiteLabelActive } from '@/lib/white-label';
 import { Container, Card, BrandFooter } from '@/components/ui';
 import AnnouncementBadge from '@/components/AnnouncementBadge';
 import type { EventRow } from '@/lib/types';
@@ -13,13 +16,23 @@ export const dynamic = 'force-dynamic';
  */
 export default async function EventAnnouncementsPage({ params }: { params: { slug: string } }) {
   await migrate();
+  await ensureSettingsColumns();
+  await ensureOrganizerColumns();
   await ensureAnnouncementColumns();
   const db = getDb();
 
-  const event = (await db.prepare('SELECT * FROM events WHERE slug = ?').get(params.slug)) as
-    | EventRow
+  // Join the organizer so white label is gated on plan eligibility (paid feature).
+  const event = (await db.prepare(
+    `SELECT e.*, o.plan AS organizer_plan, o.white_label_granted AS organizer_white_label_granted
+     FROM events e JOIN organizers o ON o.id = e.organizer_id WHERE e.slug = ?`,
+  ).get(params.slug)) as
+    | (EventRow & { organizer_plan: string | null; organizer_white_label_granted: number | null })
     | undefined;
   if (!event || (event.status !== 'published' && event.status !== 'closed')) notFound();
+  const whiteLabelActive = eventWhiteLabelActive(event, {
+    plan: event.organizer_plan,
+    white_label_granted: event.organizer_white_label_granted,
+  });
 
   const announcements = (await db
     .prepare(
@@ -72,7 +85,7 @@ export default async function EventAnnouncementsPage({ params }: { params: { slu
         </div>
       </Container>
       <BrandFooter
-        whiteLabel={Boolean(event.white_label)}
+        whiteLabel={whiteLabelActive}
         customText={event.custom_footer_text}
       />
     </div>

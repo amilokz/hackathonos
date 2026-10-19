@@ -1,12 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
+import { brandVars, brandName } from '@/lib/brand';
 
 export interface LiveData {
   eventName: string;
   eventSlug: string;
   status: string;
+  /** Brand-theming fields (added via ensureBrandingColumns(); read defensively). */
+  brandColor?: string | null;
+  brandName?: string | null;
+  brandLogoUrl?: string | null;
   deadlineIso: string | null;
   teamsCount: number;
   projectsCount: number;
@@ -240,7 +245,10 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
   };
 
   return (
-    <div className="flex min-h-dvh flex-col overflow-x-clip overflow-y-auto bg-slate-950 text-white">
+    <div
+      className="flex min-h-dvh flex-col overflow-x-clip overflow-y-auto bg-slate-950 text-white"
+      style={brandVars(data.brandColor) as CSSProperties}
+    >
       <style>{`
         @keyframes hcc-marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes hcc-rise { 0% { transform: translateY(70px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
@@ -256,19 +264,29 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
 
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-800 bg-slate-900/60 px-4 py-3 md:px-8 md:py-4">
-        <div className="min-w-0">
-          <h1 className="truncate text-2xl font-black tracking-tight md:text-5xl">
-            {data.eventName}
-          </h1>
-          {!kiosk && (
-            <a
-              href={`/e/${data.eventSlug}`}
-              className="mt-0.5 inline-flex items-center gap-1 text-xs text-indigo-300 hover:underline md:text-sm"
-            >
-              <Icon name="arrow-left" className="h-3.5 w-3.5" />
-              View event page
-            </a>
-          )}
+        <div className="flex min-w-0 items-center gap-3 md:gap-4">
+          {(data.brandLogoUrl ?? '').trim() ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={(data.brandLogoUrl ?? '').trim()}
+              alt={`${brandName(data.brandName, data.eventName)} logo`}
+              className="h-10 w-10 shrink-0 rounded-xl object-contain md:h-14 md:w-14"
+            />
+          ) : null}
+          <div className="min-w-0">
+            <h1 className="truncate text-2xl font-black tracking-tight md:text-5xl">
+              {brandName(data.brandName, data.eventName)}
+            </h1>
+            {!kiosk && (
+              <a
+                href={`/e/${data.eventSlug}`}
+                className="mt-0.5 inline-flex items-center gap-1 text-xs text-[var(--brand-light)] hover:underline md:text-sm"
+              >
+                <Icon name="arrow-left" className="h-3.5 w-3.5" />
+                View event page
+              </a>
+            )}
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-3 md:gap-6">
           <span className="text-sm font-semibold tabular-nums text-slate-300 md:text-2xl">
@@ -368,7 +386,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
               icon="users"
               label="Registered teams"
               value={String(data.teamsCount)}
-              accent="bg-indigo-500/20 text-indigo-300"
+              accent="bg-[rgb(var(--brand-rgb)/0.2)] text-[var(--brand-light)]"
             />
           </div>
           <div className="hcc-stat min-w-[220px]">
@@ -404,14 +422,14 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
           <span className="min-w-0 truncate">
             Judging progress · {data.scoredCells}/{data.totalCells} scores
           </span>
-          <span className="shrink-0 rounded-full bg-indigo-500/15 px-2.5 py-0.5 font-black tabular-nums text-indigo-200 ring-1 ring-indigo-500/40">
+          <span className="shrink-0 rounded-full bg-[rgb(var(--brand-rgb)/0.15)] px-2.5 py-0.5 font-black tabular-nums text-[var(--brand-light)] ring-1 ring-[rgb(var(--brand-rgb)/0.4)]">
             {data.judgingPct}%
           </span>
         </div>
         <div className="mt-2.5 h-3 overflow-hidden rounded-full bg-slate-800 ring-1 ring-slate-700/60 md:h-4">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-sky-400 to-emerald-400 shadow-[0_0_12px_rgba(99,102,241,0.7)] transition-all duration-1000"
-            style={{ width: `${data.judgingPct}%` }}
+            className="h-full rounded-full bg-gradient-to-r from-[var(--brand)] via-sky-400 to-emerald-400 transition-all duration-1000"
+            style={{ width: `${data.judgingPct}%`, boxShadow: '0 0 12px rgb(var(--brand-rgb) / 0.7)' }}
           />
         </div>
       </section>
@@ -438,7 +456,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
                     <div className="mb-4 mt-3 w-full rounded-xl bg-slate-900/70 px-2 py-1.5 text-center ring-1 ring-slate-800">
                       <div className="truncate text-sm font-black md:text-xl">{w.team_name}</div>
                       <div className="truncate text-[10px] text-slate-400 md:text-xs">{w.title}</div>
-                      <div className="text-xs font-bold tabular-nums text-indigo-300 md:text-base">
+                      <div className="text-xs font-bold tabular-nums text-[var(--brand-light)] md:text-base">
                         {w.score} pts
                       </div>
                       {w.breakdown.length > 0 && (
@@ -467,7 +485,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
           <div className="relative mx-auto w-full max-w-3xl overflow-hidden rounded-3xl bg-slate-900/50 py-8 text-center ring-1 ring-slate-800 md:py-12">
             {/* decorative glow rings */}
             <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="hcc-glow h-48 w-48 rounded-full bg-indigo-500/10 blur-2xl md:h-72 md:w-72" />
+              <div className="hcc-glow h-48 w-48 rounded-full bg-[rgb(var(--brand-rgb)/0.1)] blur-2xl md:h-72 md:w-72" />
             </div>
             <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-b from-amber-300/20 to-amber-600/20 ring-1 ring-amber-400/30 md:h-28 md:w-28">
               <Icon name="trophy" className="h-10 w-10 text-amber-300 md:h-14 md:w-14" />
@@ -538,7 +556,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
                     key={`${copy}-${rep}-${i}`}
                     className="flex shrink-0 items-center gap-3 whitespace-nowrap pr-10 text-sm font-semibold text-slate-200 md:gap-4 md:pr-14 md:text-lg"
                   >
-                    <Icon name="megaphone" className="h-4 w-4 shrink-0 text-indigo-400 md:h-5 md:w-5" />
+                    <Icon name="megaphone" className="h-4 w-4 shrink-0 text-[var(--brand-light)] md:h-5 md:w-5" />
                     {msg}
                   </span>
                 )),

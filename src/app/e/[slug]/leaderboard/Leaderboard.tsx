@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type CSSProperties } from 'react';
+import { brandVars, brandName } from '@/lib/brand';
 
 interface CriterionAverage {
   criterion: string;
@@ -47,6 +48,9 @@ const PODIUM_STYLE: Record<number, { card: string; delay: string }> = {
 
 export default function Leaderboard({ slug }: { slug: string }) {
   const [eventName, setEventName] = useState('');
+  const [brandColor, setBrandColor] = useState('#4F46E5');
+  const [brandDisplayName, setBrandDisplayName] = useState('');
+  const [brandLogoUrl, setBrandLogoUrl] = useState('');
   const [isClosed, setIsClosed] = useState(false);
   const [whiteLabel, setWhiteLabel] = useState(false);
   const [footerText, setFooterText] = useState('');
@@ -62,6 +66,9 @@ export default function Leaderboard({ slug }: { slug: string }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load leaderboard');
       setEventName(data.event.name);
+      setBrandColor(data.event.brand_color ?? '#4F46E5');
+      setBrandDisplayName(brandName(data.event.brand_name ?? '', data.event.name));
+      setBrandLogoUrl((data.event.brand_logo_url ?? '').trim());
       setIsClosed(data.event.status === 'closed');
       setWhiteLabel(Boolean(data.event.white_label));
       setFooterText((data.event.custom_footer_text ?? '').trim());
@@ -84,25 +91,32 @@ export default function Leaderboard({ slug }: { slug: string }) {
   const rest = results.filter((r) => !podium.includes(r));
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+    <div
+      className="flex min-h-screen flex-col bg-slate-50 text-slate-900"
+      style={brandVars(brandColor) as CSSProperties}
+    >
       <style>{`
         @keyframes lb-rise { 0% { transform: translateY(70px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
         .lb-rise { animation: lb-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
       `}</style>
 
       <header className="border-b border-slate-200 bg-white px-4 pb-8 pt-12 text-center">
+        {brandLogoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={brandLogoUrl} alt={`${brandDisplayName} logo`} className="mx-auto mb-4 h-14 w-14 rounded-2xl object-contain" />
+        ) : null}
         {isClosed ? (
           <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-700">
             🏁 Final results
           </p>
         ) : (
-          <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-indigo-700">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-500" />
+          <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-[rgb(var(--brand-rgb)/0.08)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--brand-dark)]">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--brand)]" />
             Live leaderboard
           </p>
         )}
         <h1 className="mx-auto max-w-3xl text-4xl font-extrabold tracking-tight md:text-5xl">
-          {eventName || '…'}
+          {brandDisplayName || eventName || '…'}
         </h1>
         {updatedAt && (
           <p className="mt-3 text-xs text-slate-500">
@@ -167,11 +181,11 @@ export default function Leaderboard({ slug }: { slug: string }) {
               <span>
                 Judging {judging.pct}% · {judging.scored}/{judging.total} scores
               </span>
-              <span className="text-indigo-600">{judging.pct}%</span>
+              <span className="text-[var(--brand)]">{judging.pct}%</span>
             </div>
             <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-700 transition-all duration-1000"
+                className="h-full rounded-full bg-gradient-to-r from-[var(--brand)] to-[var(--brand-dark)] transition-all duration-1000"
                 style={{ width: `${judging.pct}%` }}
               />
             </div>
@@ -222,7 +236,7 @@ export default function Leaderboard({ slug }: { slug: string }) {
                   <div className="shrink-0 text-right">
                     {scored ? (
                       <>
-                        <div className="text-3xl font-extrabold text-indigo-600 md:text-4xl">
+                        <div className="text-3xl font-extrabold text-[var(--brand)] md:text-4xl">
                           {Math.round(r.human_total as number)}
                         </div>
                         <div className="text-xs text-slate-400">/ 100</div>
@@ -255,7 +269,7 @@ export default function Leaderboard({ slug }: { slug: string }) {
                           className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
                         >
                           {ca.criterion}
-                          <span className="font-black text-indigo-600">
+                          <span className="font-black text-[var(--brand)]">
                             {Math.round(ca.average * 10)}
                           </span>
                         </span>

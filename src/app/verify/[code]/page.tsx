@@ -2,14 +2,18 @@ import { notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
 import { ensureCertificateColumns } from '@/lib/certificate-columns';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
+import { ensureBrandingColumns } from '@/lib/branding-columns';
 import { formatLongDate } from '@/lib/format';
 import { DsIcon } from '@/components/design-system';
+import BrandTheme from '@/components/BrandTheme';
+import { brandName } from '@/lib/brand';
 
 export const dynamic = 'force-dynamic';
 
 export default async function VerifyPage({ params }: { params: { code: string } }) {
   await migrate();
   await ensureSettingsColumns();
+  await ensureBrandingColumns();
   await ensureCertificateColumns();
   const code = params.code.trim().toUpperCase();
 
@@ -18,7 +22,7 @@ export default async function VerifyPage({ params }: { params: { code: string } 
     .prepare(
       `SELECT c.recipient_name, c.type, c.created_at, c.verification_code, c.pdf_url,
               e.name AS event_name, o.name AS organizer_name,
-              e.white_label, e.custom_footer_text
+              e.white_label, e.custom_footer_text, e.brand_color, e.brand_name, e.brand_logo_url
        FROM certificates c
        JOIN events e ON e.id = c.event_id
        JOIN organizers o ON o.id = e.organizer_id
@@ -35,15 +39,26 @@ export default async function VerifyPage({ params }: { params: { code: string } 
         organizer_name: string;
         white_label: number | null;
         custom_footer_text: string | null;
+        brand_color: string | null;
+        brand_name: string | null;
+        brand_logo_url: string | null;
       }
     | undefined;
 
   // Unknown codes render the app 404 page (never a 500, never a forged "valid" state).
   if (!cert) notFound();
 
+  const publicName = brandName(cert.brand_name, cert.event_name);
+  const brandLogo = (cert.brand_logo_url ?? '').trim();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
+    <BrandTheme color={cert.brand_color} className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
+        {brandLogo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={brandLogo} alt={`${publicName} logo`} className="mx-auto mb-4 h-14 w-14 rounded-2xl object-contain" />
+        ) : null}
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--brand)]">{publicName}</p>
         {cert ? (
           <>
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-2xl">
@@ -80,7 +95,7 @@ export default async function VerifyPage({ params }: { params: { code: string } 
               <a
                 href={cert.pdf_url}
                 download={`certificate-${cert.verification_code}.pdf`}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--brand-dark)]"
               >
                 <DsIcon name="download" className="h-4 w-4" />
                 Download PDF
@@ -94,6 +109,6 @@ export default async function VerifyPage({ params }: { params: { code: string } 
           <p className="mt-8 text-[11px] text-slate-400">Powered by HackathonOS · Built by AKCLNT</p>
         ) : null}
       </div>
-    </div>
+    </BrandTheme>
   );
 }

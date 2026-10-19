@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { getDb } from './db';
+import { ensureOrganizerColumns } from './organizer-columns';
 import { verifySession, SESSION_COOKIE_NAME } from './auth';
 
 export interface Organizer {
@@ -7,6 +8,10 @@ export interface Organizer {
   name: string;
   email: string;
   created_at: string;
+  /** Billing plan: 'free' | 'pro' | 'enterprise' (see src/lib/plans.ts). */
+  plan: string;
+  /** Manual per-organizer white label override (1 = unlocked regardless of plan). */
+  white_label_granted: number;
 }
 
 /**
@@ -15,18 +20,22 @@ export interface Organizer {
  * pages should redirect to /login).
  */
 export async function requireOrganizer(): Promise<Organizer | null> {
+  await ensureOrganizerColumns();
   const token = cookies().get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
   const organizerId = verifySession(token);
   if (!organizerId) return null;
   const row = (await getDb()
-    .prepare('SELECT id, name, email, created_at FROM organizers WHERE id = ?')
+    .prepare(
+      "SELECT id, name, email, created_at, COALESCE(plan, 'free') AS plan, COALESCE(white_label_granted, 0) AS white_label_granted FROM organizers WHERE id = ?",
+    )
     .get(organizerId)) as Organizer | undefined;
   return row ?? null;
 }
 
 /** Same as requireOrganizer but for Route Handlers (reads from the request). */
 export async function requireOrganizerFromRequest(req: Request): Promise<Organizer | null> {
+  await ensureOrganizerColumns();
   const header = req.headers.get('cookie') ?? '';
   const match = header.match(new RegExp(`${SESSION_COOKIE_NAME}=([^;]+)`));
   const token = match?.[1];
@@ -34,7 +43,9 @@ export async function requireOrganizerFromRequest(req: Request): Promise<Organiz
   const organizerId = verifySession(decodeURIComponent(token));
   if (!organizerId) return null;
   const row = (await getDb()
-    .prepare('SELECT id, name, email, created_at FROM organizers WHERE id = ?')
+    .prepare(
+      "SELECT id, name, email, created_at, COALESCE(plan, 'free') AS plan, COALESCE(white_label_granted, 0) AS white_label_granted FROM organizers WHERE id = ?",
+    )
     .get(organizerId)) as Organizer | undefined;
   return row ?? null;
 }

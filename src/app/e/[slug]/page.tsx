@@ -1,10 +1,15 @@
 import { notFound } from 'next/navigation';
 import { getDb, migrate } from '@/lib/db';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
+import { ensureBrandingColumns } from '@/lib/branding-columns';
+import { ensureOrganizerColumns } from '@/lib/organizer-columns';
+import { eventWhiteLabelActive } from '@/lib/white-label';
 import { ensureAnnouncementColumns, type AnnouncementRow } from '@/lib/announcement-columns';
 import AnnouncementBadge from '@/components/AnnouncementBadge';
 import { computeResults } from '@/lib/results';
 import { Container, Card, LinkButton, BrandFooter } from '@/components/ui';
+import BrandTheme from '@/components/BrandTheme';
+import { brandName } from '@/lib/brand';
 import { toYouTubeEmbed } from '@/lib/youtube';
 import { formatDate, formatEntryFee } from '@/lib/format';
 import type { EventRow, SponsorRow } from '@/lib/types';
@@ -41,12 +46,23 @@ function SectionTitle({ emoji, title }: { emoji: string; title: string }) {
 export default async function PublicEventPage({ params }: { params: { slug: string } }) {
   await migrate();
   await ensureSettingsColumns();
+  await ensureBrandingColumns();
+  await ensureOrganizerColumns();
   await ensureAnnouncementColumns();
   const db = getDb();
-  const event = await db.prepare('SELECT * FROM events WHERE slug = ?').get(params.slug) as EventRow | undefined;
+  // Join the organizer so white label can be gated on plan eligibility
+  // (paid feature) — not just the per-event toggle.
+  const event = await db.prepare(
+    `SELECT e.*, o.plan AS organizer_plan, o.white_label_granted AS organizer_white_label_granted
+     FROM events e JOIN organizers o ON o.id = e.organizer_id WHERE e.slug = ?`,
+  ).get(params.slug) as (EventRow & { organizer_plan: string | null; organizer_white_label_granted: number | null }) | undefined;
   // Closed events stay publicly visible (with an "ended" banner); only drafts are hidden.
   if (!event || (event.status !== 'published' && event.status !== 'closed')) notFound();
   const isClosed = event.status === 'closed';
+  const whiteLabelActive = eventWhiteLabelActive(event, {
+    plan: event.organizer_plan,
+    white_label_granted: event.organizer_white_label_granted,
+  });
 
   const sponsors = await db
     .prepare("SELECT * FROM sponsors WHERE event_id = ? ORDER BY CASE tier WHEN 'platinum' THEN 0 WHEN 'gold' THEN 1 WHEN 'silver' THEN 2 ELSE 3 END")
@@ -85,18 +101,37 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
     </div>
   );
 
+  // Branding: explicit brand name (fallback: event name), logo and accent color.
+  // Invalid hexes fall back to the default indigo inside BrandTheme.
+  const publicName = brandName(event.brand_name, event.name);
+  const brandLogo = (event.brand_logo_url ?? '').trim();
+
   const ctas = (
     <div className="mt-8 flex flex-wrap justify-center gap-3">
       {!isClosed && (
         <>
-          <LinkButton href={`/e/${event.slug}/register`}>Register your team</LinkButton>
+          <a
+            href={`/e/${event.slug}/register`}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--brand-dark)]"
+          >
+            Register your team
+          </a>
           <LinkButton href={`/e/${event.slug}/teams`} variant="secondary">🔍 Find a team</LinkButton>
           <LinkButton href={`/e/${event.slug}/submit`} variant="secondary">Submit project</LinkButton>
         </>
       )}
-      <LinkButton href={`/e/${event.slug}/leaderboard`} variant={isClosed ? 'primary' : 'secondary'}>
-        {isClosed ? '🏆 View final results' : 'View leaderboard'}
-      </LinkButton>
+      {isClosed ? (
+        <a
+          href={`/e/${event.slug}/leaderboard`}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--brand-dark)]"
+        >
+          🏆 View final results
+        </a>
+      ) : (
+        <LinkButton href={`/e/${event.slug}/leaderboard`} variant="secondary">
+          View leaderboard
+        </LinkButton>
+      )}
     </div>
   );
 
@@ -139,7 +174,7 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
       <p className="mt-3 text-center text-sm">
         <a
           href={`/e/${event.slug}/announcements`}
-          className="font-semibold text-indigo-600 hover:underline"
+          className="font-semibold text-[var(--brand)] hover:underline"
         >
           View all announcements →
         </a>
@@ -160,20 +195,54 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
               <p className="truncate font-bold text-slate-900">{w.title}</p>
               <p className="text-sm text-slate-500">{w.team_name}</p>
             </div>
-            <p className="text-xl font-extrabold text-indigo-600">{Math.round(w.human_total ?? 0)}</p>
+            <p className="text-xl font-extrabold text-[var(--brand)]">{Math.round(w.human_total ?? 0)}</p>
           </div>
         ))}
       </Card>
       <p className="mt-3 text-center text-sm">
-        <a href={`/e/${event.slug}/leaderboard`} className="font-semibold text-indigo-600 hover:underline">
+        <a href={`/e/${event.slug}/leaderboard`} className="font-semibold text-[var(--brand)] hover:underline">
           See the full leaderboard →
         </a>
       </p>
     </section>
   );
 
+  const publicHeader = (
+    <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/85 backdrop-blur">
+      <Container className="flex h-16 items-center justify-between gap-4">
+        <a href={`/e/${event.slug}`} className="flex min-w-0 items-center gap-3">
+          {brandLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={brandLogo} alt={`${publicName} logo`} className="h-9 w-9 shrink-0 rounded-xl object-contain" />
+          ) : (
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] text-sm font-black text-white">
+              {publicName.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <span className="truncate text-lg font-extrabold tracking-tight text-slate-900">{publicName}</span>
+        </a>
+        {!isClosed ? (
+          <a
+            href={`/e/${event.slug}/register`}
+            className="shrink-0 rounded-xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--brand-dark)]"
+          >
+            Register
+          </a>
+        ) : (
+          <a
+            href={`/e/${event.slug}/leaderboard`}
+            className="shrink-0 rounded-xl bg-[var(--brand)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--brand-dark)]"
+          >
+            Results
+          </a>
+        )}
+      </Container>
+    </header>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50">
+    <BrandTheme color={event.brand_color} className="min-h-screen bg-slate-50">
+      {publicHeader}
       {isClosed && endedBanner}
       {cover ? (
         <>
@@ -246,10 +315,10 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
             <section>
               <SectionTitle emoji="🗓️" title="Schedule" />
               <Card className="mt-3 p-5 sm:p-6">
-                <ol className="relative space-y-4 border-l-2 border-indigo-100 pl-0">
+                <ol className="relative space-y-4 border-l-2 border-[rgb(var(--brand-rgb)/0.15)] pl-0">
                   {scheduleLines.map((s, i) => (
                     <li key={i} className="relative pl-6">
-                      <span className="absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-indigo-500 bg-white" />
+                      <span className="absolute -left-[7px] top-1 h-3 w-3 rounded-full border-2 border-[var(--brand)] bg-white" />
                       <p className="text-sm leading-relaxed text-slate-700">{s}</p>
                     </li>
                   ))}
@@ -330,9 +399,9 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
         </div>
       </Container>
       <BrandFooter
-        whiteLabel={Boolean(event.white_label)}
+        whiteLabel={whiteLabelActive}
         customText={event.custom_footer_text}
       />
-    </div>
+    </BrandTheme>
   );
 }

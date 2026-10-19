@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { getDb, migrate } from '@/lib/db';
 import { ensureCertificateColumns } from '@/lib/certificate-columns';
 import { ensureSettingsColumns } from '@/lib/settings-columns';
+import { ensureBrandingColumns } from '@/lib/branding-columns';
 import { requireOrganizerFromRequest, getOwnedEvent } from '@/lib/require-organizer';
 import { uniqueCertificateCode } from '@/lib/certificate-codes';
 
@@ -44,6 +45,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   await migrate();
   await ensureCertificateColumns();
   await ensureSettingsColumns();
+  await ensureBrandingColumns();
   const organizer = await requireOrganizerFromRequest(req);
   if (!organizer) return Response.json({ error: 'Not signed in' }, { status: 401 });
   const event = await getOwnedEvent(params.id, organizer.id);

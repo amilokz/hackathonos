@@ -33,7 +33,7 @@ export default async function SettingsPage({ params }: { params: { id: string } 
             </LinkButton>
           }
         />
-        <SettingsClient eventId={params.id} />
+        <SettingsClient eventId={params.id} eventName={event.name} />
       </Container>
     </OrganizerShell>
   );
