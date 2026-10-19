@@ -185,10 +185,13 @@ function StatTile({
 
 export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kiosk: boolean }) {
   const router = useRouter();
-  const [now, setNow] = useState(() => Date.now());
+  // null on first render so SSR and client HTML match (avoids hydration mismatch);
+  // the real time is set in useEffect on the client only.
+  const [now, setNow] = useState<number | null>(null);
 
   // Client clock + per-second countdown tick.
   useEffect(() => {
+    setNow(Date.now());
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
@@ -201,7 +204,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
 
   const deadlineMs = data.deadlineIso ? Date.parse(data.deadlineIso) : null;
   const validDeadline = deadlineMs !== null && !Number.isNaN(deadlineMs);
-  const diff = validDeadline ? deadlineMs - now : null;
+  const diff = validDeadline && now !== null ? deadlineMs - now : null;
   const closed = diff !== null && diff <= 0;
   const withinHour = diff !== null && diff > 0 && diff <= 3600_000;
 
@@ -290,7 +293,7 @@ export default function LiveCommandCenter({ data, kiosk }: { data: LiveData; kio
         </div>
         <div className="flex shrink-0 items-center gap-3 md:gap-6">
           <span className="text-sm font-semibold tabular-nums text-slate-300 md:text-2xl">
-            {new Date(now).toLocaleTimeString()}
+            {now !== null ? new Date(now).toLocaleTimeString() : '––:––:––'}
           </span>
           <span className="inline-flex items-center gap-2 rounded-full bg-red-600/20 px-3 py-1.5 text-sm font-black uppercase tracking-widest text-red-400 ring-1 ring-red-500/50 md:px-5 md:py-2 md:text-lg">
             <span className="hcc-blink h-2.5 w-2.5 rounded-full bg-red-500 md:h-3.5 md:w-3.5" />
