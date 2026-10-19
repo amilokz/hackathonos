@@ -277,7 +277,24 @@ export default async function DashboardPage() {
   const org = await requireOrganizer();
   if (!org) redirect('/login');
 
-  await migrate();
+  // Defensive: surface the real DB error instead of a cryptic digest.
+  try {
+    await migrate();
+  } catch (e) {
+    return (
+      <OrganizerShell organizer={org} active="overview" eventContext={null}>
+        <Container className="py-6 sm:py-8">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+            <p className="font-semibold text-red-800">Dashboard could not load.</p>
+            <p className="mt-1 text-sm text-red-600">
+              {e instanceof Error ? e.message : 'Unknown database error'}
+            </p>
+            <p className="mt-2 text-sm text-red-600">Please try refreshing the page.</p>
+          </div>
+        </Container>
+      </OrganizerShell>
+    );
+  }
   const db = getDb();
   const events = (await db
     .prepare('SELECT * FROM events WHERE organizer_id = ? ORDER BY created_at DESC')
