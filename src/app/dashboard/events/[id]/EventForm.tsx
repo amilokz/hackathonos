@@ -25,12 +25,17 @@ export default function EventForm({ event }: { event: EventRow }) {
     schedule: event.schedule ?? '',
     faq: event.faq ?? '',
     highlight_video_url: event.highlight_video_url ?? '',
+    event_type: event.event_type ?? 'hackathon',
+    meeting_link: event.meeting_link ?? '',
+    whatsapp_group_link: event.whatsapp_group_link ?? '',
   });
 
   function set(key: keyof typeof form, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
     setSaved(null);
   }
+
+  const isIndividualType = form.event_type !== 'hackathon';
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,6 +77,24 @@ export default function EventForm({ event }: { event: EventRow }) {
         <Field label="URL slug" hint="Public page lives at /e/this-slug. Changing it breaks old links.">
           <input value={form.slug} onChange={(e) => set('slug', e.target.value)} className={`${inputClass} font-mono`} required minLength={2} />
         </Field>
+        <Field label="Event type" hint="Hackathons use team registration. Webinars, seminars and workshops use simple individual registration (name + email + phone).">
+          <select value={form.event_type} onChange={(e) => set('event_type', e.target.value)} className={inputClass}>
+            <option value="hackathon">Hackathon</option>
+            <option value="webinar">Webinar</option>
+            <option value="seminar">Seminar</option>
+            <option value="workshop">Workshop</option>
+          </select>
+        </Field>
+        {isIndividualType && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Meeting link" hint="Zoom / Google Meet link. Shown to registered attendees.">
+              <input value={form.meeting_link} onChange={(e) => set('meeting_link', e.target.value)} className={inputClass} placeholder="https://zoom.us/j/…" />
+            </Field>
+            <Field label="WhatsApp group link" hint="Your WhatsApp group invite link. Shown as a join button on the event page.">
+              <input value={form.whatsapp_group_link} onChange={(e) => set('whatsapp_group_link', e.target.value)} className={inputClass} placeholder="https://chat.whatsapp.com/…" />
+            </Field>
+          </div>
+        )}
         <Field label="Description">
           <textarea value={form.description} onChange={(e) => set('description', e.target.value)} className={`${inputClass} min-h-24`} />
         </Field>

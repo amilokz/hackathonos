@@ -19,6 +19,9 @@ const UpdateEventSchema = z.object({
   schedule: z.string().trim().max(4000).optional(),
   faq: z.string().trim().max(4000).optional(),
   highlight_video_url: z.string().trim().max(500).optional(),
+  event_type: z.enum(['hackathon', 'webinar', 'seminar', 'workshop']).optional(),
+  meeting_link: z.string().trim().max(500).optional(),
+  whatsapp_group_link: z.string().trim().max(500).optional(),
 });
 
 async function owned(req: NextRequest, id: string) {
@@ -105,6 +108,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   await db.prepare('DELETE FROM judges WHERE event_id = ?').run(event.id);
   await db.prepare('DELETE FROM criteria WHERE event_id = ?').run(event.id);
   await db.prepare('DELETE FROM teams WHERE event_id = ?').run(event.id);
+  await db.prepare('DELETE FROM individual_registrations WHERE event_id = ?').run(event.id);
   await db.prepare('DELETE FROM events WHERE id = ?').run(event.id);
 
   return NextResponse.json({ ok: true });

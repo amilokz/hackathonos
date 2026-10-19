@@ -51,6 +51,13 @@ export default async function VerifyPage({ params }: { params: { code: string } 
   const publicName = brandName(cert.brand_name, cert.event_name);
   const brandLogo = (cert.brand_logo_url ?? '').trim();
 
+  // Friendly certificate-type labels. 'attendee' = webinar/seminar/workshop
+  // participation certificates issued from the attendance flow.
+  const typeLabel =
+    cert.type === 'attendee'
+      ? 'Certificate of Participation'
+      : cert.type.charAt(0).toUpperCase() + cert.type.slice(1);
+
   return (
     <BrandTheme color={cert.brand_color} className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
@@ -73,7 +80,7 @@ export default async function VerifyPage({ params }: { params: { code: string } 
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
                 <dt className="text-slate-500">Type</dt>
-                <dd className="font-medium capitalize text-slate-900">{cert.type}</dd>
+                <dd className="font-medium text-slate-900">{typeLabel}</dd>
               </div>
               <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
                 <dt className="text-slate-500">Event</dt>

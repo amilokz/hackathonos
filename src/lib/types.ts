@@ -33,6 +33,12 @@ export interface EventRow {
   brand_color?: string | null;
   brand_logo_url?: string | null;
   brand_name?: string | null;
+  // Event types (added via EVENT_COLUMN_ADDITIONS; may be absent on very
+  // old DBs — always read defensively). 'hackathon' = team-based;
+  // 'webinar' | 'seminar' | 'workshop' = individual registration.
+  event_type?: string | null;
+  meeting_link?: string | null;
+  whatsapp_group_link?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -71,4 +77,36 @@ export interface SponsorRow {
   logo_url: string;
   tier: string;
   website: string;
+}
+
+export interface IndividualRegistrationRow {
+  id: string;
+  event_id: string;
+  name: string;
+  email: string;
+  phone: string;
+  attended: number;
+  reminder_sent: number;
+  created_at: string;
+}
+
+/** Event types. 'hackathon' = team-based registration; the rest = individual. */
+export const EVENT_TYPES = ['hackathon', 'webinar', 'seminar', 'workshop'] as const;
+export type EventType = (typeof EVENT_TYPES)[number];
+
+export function isIndividualEventType(eventType: string | null | undefined): boolean {
+  return eventType === 'webinar' || eventType === 'seminar' || eventType === 'workshop';
+}
+
+export function eventTypeLabel(eventType: string | null | undefined): string {
+  switch ((eventType ?? 'hackathon').toLowerCase()) {
+    case 'webinar':
+      return 'Webinar';
+    case 'seminar':
+      return 'Seminar';
+    case 'workshop':
+      return 'Workshop';
+    default:
+      return 'Hackathon';
+  }
 }

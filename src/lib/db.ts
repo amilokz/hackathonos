@@ -388,6 +388,10 @@ const EVENT_COLUMN_ADDITIONS = [
   "ALTER TABLE events ADD COLUMN highlight_video_url TEXT DEFAULT ''",
   "ALTER TABLE events ADD COLUMN require_team_approval INTEGER DEFAULT 0",
   "ALTER TABLE events ADD COLUMN updated_at TEXT DEFAULT ''",
+  // Event types: hackathon (team-based) vs webinar/seminar/workshop (individual registration).
+  "ALTER TABLE events ADD COLUMN event_type TEXT DEFAULT 'hackathon'",
+  "ALTER TABLE events ADD COLUMN meeting_link TEXT DEFAULT ''",
+  "ALTER TABLE events ADD COLUMN whatsapp_group_link TEXT DEFAULT ''",
 ];
 
 async function ensureEventColumns(): Promise<void> {
@@ -492,6 +496,33 @@ async function ensureTeamMemberColumns(): Promise<void> {
 }
 
 /**
+ * Individual registrations for webinar/seminar/workshop events (non-hackathon
+ * event types). One row per attendee — no teams involved.
+ * attended: 0/1 set by the organizer after the event (drives certificates).
+ * reminder_sent: 0/1 set by the reminder cron (idempotent).
+ */
+async function ensureIndividualRegistrations(): Promise<void> {
+  const db = getDb();
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS individual_registrations (
+      id TEXT PRIMARY KEY,
+      event_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      phone TEXT DEFAULT '',
+      attended INTEGER DEFAULT 0,
+      reminder_sent INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+      UNIQUE (event_id, email)
+    );
+  `);
+  await db.exec(
+    'CREATE INDEX IF NOT EXISTS idx_individual_registrations_event ON individual_registrations(event_id)',
+  );
+}
+
+/**
  * Creates all HackathonOS tables if they do not exist.
  * Safe to call on every boot — pure DDL, no data changes.
  */
@@ -500,6 +531,7 @@ export async function migrate(): Promise<void> {
   await db.exec('PRAGMA foreign_keys = ON');
   await db.exec(DDL);
   await ensureEventColumns();
+  await ensureIndividualRegistrations();
   await ensureTeamColumns();
   await backfillInviteCodes();
   await ensureScoreColumns();

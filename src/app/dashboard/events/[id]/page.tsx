@@ -103,13 +103,33 @@ export default async function ManageEventPage({ params }: { params: { id: string
     { href: `/dashboard/events/${id}/analytics`, label: 'Analytics', desc: 'Mission Control live stats' },
   ];
 
+  const individualType = event.event_type === 'webinar' || event.event_type === 'seminar' || event.event_type === 'workshop';
+  const typeLabel = event.event_type === 'webinar' ? 'Webinar' : event.event_type === 'seminar' ? 'Seminar' : event.event_type === 'workshop' ? 'Workshop' : 'Hackathon';
+  const registrantCount = individualType
+    ? ((await db.prepare('SELECT COUNT(*) AS c FROM individual_registrations WHERE event_id = ?').get(event.id)) as { c: number }).c
+    : 0;
+
+  // Individual event types (webinar/seminar/workshop) get an attendance link
+  // for marking who showed up and issuing participation certificates.
+  if (individualType) {
+    manageLinks.splice(1, 0, {
+      href: `/dashboard/events/${id}/attendance`,
+      label: 'Attendance & certificates',
+      desc: 'Mark attendance, issue Certificates of Participation',
+    });
+  }
+
   return (
     <OrganizerShell organizer={org} active="events" eventContext={{ id: event.id, slug: event.slug }}>
       <Container className="py-6 sm:py-8">
         <PageHeader
           breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: event.name }]}
           title={event.name}
-          subtitle={`${teams} teams · ${projects} projects${pendingTeams > 0 ? ` · ${pendingTeams} awaiting approval` : ''}`}
+          subtitle={
+            individualType
+              ? `${typeLabel} · ${registrantCount} registered`
+              : `${typeLabel} · ${teams} teams · ${projects} projects${pendingTeams > 0 ? ` · ${pendingTeams} awaiting approval` : ''}`
+          }
           actions={<PublishToggle eventId={event.id} status={event.status} size="lg" />}
         />
 

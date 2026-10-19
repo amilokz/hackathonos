@@ -10,7 +10,9 @@ import BrandTheme from '@/components/BrandTheme';
 import { brandName } from '@/lib/brand';
 import { formatEntryFee } from '@/lib/format';
 import RegisterForm from './RegisterForm';
+import IndividualRegisterForm from './IndividualRegisterForm';
 import type { EventRow } from '@/lib/types';
+import { isIndividualEventType, eventTypeLabel } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +36,8 @@ export default async function TeamRegisterPage({ params }: { params: { slug: str
   const publicName = brandName(event.brand_name, event.name);
   const brandLogo = (event.brand_logo_url ?? '').trim();
   const isClosed = event.status === 'closed';
+  const individualType = isIndividualEventType(event.event_type);
+  const typeLabel = eventTypeLabel(event.event_type);
 
   return (
     <BrandTheme color={event.brand_color} className="min-h-screen bg-slate-50">
@@ -77,10 +81,10 @@ export default async function TeamRegisterPage({ params }: { params: { slug: str
           <div className="mx-auto max-w-2xl text-center">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-white backdrop-blur-md">
               <DsIcon name="users" className="h-3.5 w-3.5" />
-              Team registration
+              {individualType ? `${typeLabel} registration` : 'Team registration'}
             </span>
             <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-white drop-shadow sm:text-4xl">
-              Register your team
+              {individualType ? `Register for this ${typeLabel.toLowerCase()}` : 'Register your team'}
             </h1>
             <p className="mt-2 text-sm font-medium text-white/80">{event.name}</p>
             {event.entry_fee > 0 && (
@@ -101,8 +105,8 @@ export default async function TeamRegisterPage({ params }: { params: { slug: str
             </span>
             <h2 className="mt-4 text-xl font-bold text-slate-900">Registrations closed</h2>
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
-              {event.name} has ended, so new team registrations are no longer being accepted.
-              You can still browse the event page and see the final results.
+              {event.name} has ended, so new {individualType ? 'registrations' : 'team registrations'} are no longer being accepted.
+              You can still browse the event page{individualType ? '.' : ' and see the final results.'}
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <a
@@ -134,7 +138,11 @@ export default async function TeamRegisterPage({ params }: { params: { slug: str
                 </p>
               </Card>
             )}
-            <RegisterForm eventId={event.id} eventSlug={event.slug} />
+            {individualType ? (
+              <IndividualRegisterForm eventId={event.id} eventName={event.name} />
+            ) : (
+              <RegisterForm eventId={event.id} eventSlug={event.slug} />
+            )}
           </>
         )}
       </Container>

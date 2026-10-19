@@ -209,3 +209,30 @@ End-to-end tested against `npm run dev` with the libsql file DB. All passing:
    `SESSION_SECRET`, domain, `NEXT_PUBLIC_BASE_URL`, and their own
    `GROQ_API_KEY`/`RESEND_API_KEY`. His choice: their server or Komil's server,
    their domain when ready (Komil's plan, 2026-10-18).
+
+## Webinar / seminar / workshop support (2026-10-19)
+
+Events now have a type: `hackathon` (default, team-based registration) or
+`webinar` / `seminar` / `workshop` (simple individual registration: name + email
++ phone — no teams). New event fields: `meeting_link` (Zoom/Google Meet) and
+`whatsapp_group_link` (organizer's own WhatsApp group invite; the platform never
+touches the WhatsApp API — it only links to the organizer's group).
+
+**Organizer flow (webinar):** create event with type Webinar → publish →
+attendees register at `/e/[slug]/register` → after the event, open the
+event's **Attendance** page → tick who attended → **Issue certificates**
+(QR-verified "Certificate of Participation", emailed to each attendee).
+
+**Reminder cron:** `GET /api/cron/webinar-reminders` sends a "starting today"
+reminder email to individual registrants of published webinar/seminar/workshop
+events whose start_date is today. It is idempotent (reminder_sent flag — one
+reminder per registrant, re-runs never double-send). Event dates are date-only,
+so reminders go out on the event day, not X minutes before.
+
+To activate: hit the endpoint on a schedule from an external cron service
+(e.g. cron-job.org, every morning 08:00 PKT):
+`https://hackathonos-znwk.vercel.app/api/cron/webinar-reminders`
+Optional protection: set `CRON_SECRET` env var and pass `?secret=...`.
+
+**Sidebar UX:** organizers with no events see the event-workflow sidebar items
+disabled ("Create an event first") instead of silently landing on the events list.

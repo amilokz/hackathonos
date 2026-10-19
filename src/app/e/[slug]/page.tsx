@@ -14,6 +14,7 @@ import { brandName } from '@/lib/brand';
 import { toYouTubeEmbed } from '@/lib/youtube';
 import { formatDate, formatEntryFee } from '@/lib/format';
 import type { EventRow, SponsorRow } from '@/lib/types';
+import { isIndividualEventType, eventTypeLabel } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,6 +89,13 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
     .all(event.id) as SponsorRow[];
 
   const teams = (await db.prepare("SELECT COUNT(*) AS c FROM teams WHERE event_id = ? AND approval_status = 'approved'").get(event.id) as { c: number }).c;
+  const individualType = isIndividualEventType(event.event_type);
+  const typeLabel = eventTypeLabel(event.event_type);
+  const attendeeCount = individualType
+    ? ((await db.prepare('SELECT COUNT(*) AS c FROM individual_registrations WHERE event_id = ?').get(event.id)) as { c: number }).c
+    : 0;
+  const meetingLink = (event.meeting_link ?? '').trim();
+  const whatsappLink = (event.whatsapp_group_link ?? '').trim();
 
   const dates = [formatDate(event.start_date), formatDate(event.end_date)].filter(Boolean).join(' → ');
   const coverRaw = event.cover_url?.trim() ? event.cover_url : null;
@@ -122,8 +130,13 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
 
   const glassBadges = (
     <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
+      <GlassPill icon="sparkles">{typeLabel}</GlassPill>
       {dates && <GlassPill icon="calendar">{dates}</GlassPill>}
-      <GlassPill icon="users">{teams} teams{isClosed ? ' participated' : ' registered'}</GlassPill>
+      <GlassPill icon="users">
+        {individualType
+          ? `${attendeeCount} registered`
+          : `${teams} teams${isClosed ? ' participated' : ' registered'}`}
+      </GlassPill>
       <GlassPill icon="ticket" accent={feeFree}>{feeLabel}</GlassPill>
     </div>
   );
@@ -137,22 +150,26 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[var(--brand-dark)] shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
           >
             <DsIcon name="plus" className="h-4 w-4" />
-            Register your team
+            {individualType ? 'Register now' : 'Register your team'}
           </a>
-          <a
-            href={`/e/${event.slug}/teams`}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
-          >
-            <DsIcon name="search" className="h-4 w-4" />
-            Find a team
-          </a>
-          <a
-            href={`/e/${event.slug}/submit`}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
-          >
-            <DsIcon name="rocket" className="h-4 w-4" />
-            Submit project
-          </a>
+          {!individualType && (
+            <>
+              <a
+                href={`/e/${event.slug}/teams`}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
+              >
+                <DsIcon name="search" className="h-4 w-4" />
+                Find a team
+              </a>
+              <a
+                href={`/e/${event.slug}/submit`}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
+              >
+                <DsIcon name="rocket" className="h-4 w-4" />
+                Submit project
+              </a>
+            </>
+          )}
         </>
       )}
       <a
@@ -178,22 +195,26 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[var(--brand-dark)] hover:shadow-xl"
           >
             <DsIcon name="plus" className="h-4 w-4" />
-            Register your team
+            {individualType ? 'Register now' : 'Register your team'}
           </a>
-          <a
-            href={`/e/${event.slug}/teams`}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <DsIcon name="search" className="h-4 w-4 text-[var(--brand)]" />
-            Find a team
-          </a>
-          <a
-            href={`/e/${event.slug}/submit`}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <DsIcon name="rocket" className="h-4 w-4 text-[var(--brand)]" />
-            Submit project
-          </a>
+          {!individualType && (
+            <>
+              <a
+                href={`/e/${event.slug}/teams`}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <DsIcon name="search" className="h-4 w-4 text-[var(--brand)]" />
+                Find a team
+              </a>
+              <a
+                href={`/e/${event.slug}/submit`}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <DsIcon name="rocket" className="h-4 w-4 text-[var(--brand)]" />
+                Submit project
+              </a>
+            </>
+          )}
         </>
       )}
       <a
@@ -383,6 +404,41 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
 
       <Container className="pb-4">
         <div className="mx-auto max-w-3xl space-y-10 pt-10">
+          {(meetingLink || whatsappLink) && individualType && (
+            <section>
+              <SectionTitle icon="link" title="Join details" />
+              <Card className="mt-4 space-y-3 p-5 sm:p-6">
+                {meetingLink && (
+                  <a
+                    href={meetingLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between gap-3 rounded-xl bg-[var(--brand)] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[var(--brand-dark)]"
+                  >
+                    <span className="flex items-center gap-2">
+                      <DsIcon name="link" className="h-4 w-4" />
+                      Join the {typeLabel.toLowerCase()} meeting
+                    </span>
+                    <DsIcon name="externalLink" className="h-4 w-4" />
+                  </a>
+                )}
+                {whatsappLink && (
+                  <a
+                    href={whatsappLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3.5 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100"
+                  >
+                    <span className="flex items-center gap-2">
+                      <DsIcon name="messageSquare" className="h-4 w-4" />
+                      Join the WhatsApp group
+                    </span>
+                    <DsIcon name="externalLink" className="h-4 w-4" />
+                  </a>
+                )}
+              </Card>
+            </section>
+          )}
           {winnersSection}
           {announcementsSection}
 

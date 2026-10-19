@@ -156,6 +156,8 @@ interface NavItem {
   href: string;
   icon: IconName;
   label: string;
+  /** When true and no event context exists, the item renders disabled. */
+  needsEvent?: boolean;
 }
 
 interface NavGroup {
@@ -183,19 +185,19 @@ function buildNav(ctx?: EventNavContext | null): NavGroup[] {
     {
       title: 'Event workflow',
       items: [
-        { key: 'participants', href: ev('#teams'), icon: 'users', label: 'Participants' },
-        { key: 'teams', href: ev('#teams'), icon: 'flag', label: 'Teams' },
-        { key: 'submissions', href: ev('/judging'), icon: 'rocket', label: 'Submissions' },
-        { key: 'judges', href: ev('#judges'), icon: 'scale', label: 'Judges' },
-        { key: 'certificates', href: ev('/certificates'), icon: 'award', label: 'Certificates' },
-        { key: 'analytics', href: ev('/analytics'), icon: 'chart', label: 'Analytics' },
+        { key: 'participants', href: ev('#teams'), icon: 'users', label: 'Participants', needsEvent: true },
+        { key: 'teams', href: ev('#teams'), icon: 'flag', label: 'Teams', needsEvent: true },
+        { key: 'submissions', href: ev('/judging'), icon: 'rocket', label: 'Submissions', needsEvent: true },
+        { key: 'judges', href: ev('#judges'), icon: 'scale', label: 'Judges', needsEvent: true },
+        { key: 'certificates', href: ev('/certificates'), icon: 'award', label: 'Certificates', needsEvent: true },
+        { key: 'analytics', href: ev('/analytics'), icon: 'chart', label: 'Analytics', needsEvent: true },
       ],
     },
     {
       title: 'Organizer',
       items: [
         { key: 'messages', href: '/dashboard/messages', icon: 'message', label: 'Messages' },
-        { key: 'settings', href: ev('/settings'), icon: 'settings', label: 'Settings' },
+        { key: 'settings', href: ev('/settings'), icon: 'settings', label: 'Settings', needsEvent: true },
       ],
     },
   ];
@@ -204,13 +206,35 @@ function buildNav(ctx?: EventNavContext | null): NavGroup[] {
 function NavItemLink({
   item,
   active,
+  disabled,
   onNavigate,
 }: {
   item: NavItem;
   active: OrganizerNavKey;
+  disabled?: boolean;
   onNavigate?: () => void;
 }) {
   const isActive = item.key === active;
+  if (disabled) {
+    // New organizers have no events yet: workflow items need an event to act
+    // on. Render them visibly disabled (not silently redirecting to the
+    // events list) so the "New event" CTA is the obvious next step.
+    return (
+      <span
+        title="Create an event first"
+        aria-disabled="true"
+        className="group flex cursor-not-allowed items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600"
+      >
+        <span
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.03] text-slate-600"
+          aria-hidden="true"
+        >
+          <Icon name={item.icon} />
+        </span>
+        <span className="min-w-0 truncate">{item.label}</span>
+      </span>
+    );
+  }
   return (
     <a
       href={item.href}
@@ -261,12 +285,14 @@ function SidebarBody({
   active,
   name,
   email,
+  hasEventContext,
   onNavigate,
 }: {
   groups: NavGroup[];
   active: OrganizerNavKey;
   name: string;
   email: string;
+  hasEventContext: boolean;
   onNavigate?: () => void;
 }) {
   const initial = (name || email || '?').trim().charAt(0).toUpperCase();
@@ -302,7 +328,12 @@ function SidebarBody({
             <ul className="space-y-1">
               {g.items.map((item) => (
                 <li key={item.key}>
-                  <NavItemLink item={item} active={active} onNavigate={onNavigate} />
+                  <NavItemLink
+                    item={item}
+                    active={active}
+                    disabled={!!item.needsEvent && !hasEventContext}
+                    onNavigate={onNavigate}
+                  />
                 </li>
               ))}
             </ul>
@@ -442,6 +473,7 @@ export default function OrganizerShellNav({
           active={active}
           name={name}
           email={email}
+          hasEventContext={!!eventContext}
           onNavigate={() => setOpen(false)}
         />
       </aside>
@@ -451,7 +483,7 @@ export default function OrganizerShellNav({
         className="sidebar-scroll fixed inset-y-0 left-0 z-20 hidden w-[260px] shrink-0 flex-col overflow-y-auto bg-slate-900 p-5 pt-20 lg:flex"
         aria-label="Organizer navigation"
       >
-        <SidebarBody groups={groups} active={active} name={name} email={email} />
+        <SidebarBody groups={groups} active={active} name={name} email={email} hasEventContext={!!eventContext} />
       </aside>
     </>
   );

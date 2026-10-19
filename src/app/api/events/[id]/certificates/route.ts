@@ -8,7 +8,7 @@ import { uniqueCertificateCode } from '@/lib/certificate-codes';
 
 export const dynamic = 'force-dynamic';
 
-const CERT_TYPES = ['participant', 'winner', 'judge', 'sponsor'] as const;
+const CERT_TYPES = ['participant', 'attendee', 'winner', 'judge', 'sponsor'] as const;
 
 /** GET /api/events/[id]/certificates — list certificates for an event (organizer only). */
 export async function GET(req: Request, { params }: { params: { id: string } }) {

@@ -27,6 +27,9 @@ const CreateEventSchema = z.object({
   schedule: z.string().trim().max(4000).default(''),
   faq: z.string().trim().max(4000).default(''),
   highlight_video_url: z.string().trim().max(500).default(''),
+  event_type: z.enum(['hackathon', 'webinar', 'seminar', 'workshop']).default('hackathon'),
+  meeting_link: z.string().trim().max(500).default(''),
+  whatsapp_group_link: z.string().trim().max(500).default(''),
 });
 
 /** List the signed-in organizer's events. */
@@ -64,10 +67,11 @@ export async function POST(req: NextRequest) {
 
   const id = uuid();
   const now = new Date().toISOString();
+  // INSERT column/value sanity check: 20 columns = 19 ? placeholders + 1 literal ('draft').
   await db
     .prepare(
-      `INSERT INTO events (id, organizer_id, name, slug, description, logo_url, cover_url, start_date, end_date, entry_fee, prizes, schedule, faq, highlight_video_url, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
+      `INSERT INTO events (id, organizer_id, name, slug, description, logo_url, cover_url, start_date, end_date, entry_fee, prizes, schedule, faq, highlight_video_url, event_type, meeting_link, whatsapp_group_link, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
     )
     .run(
       id,
@@ -84,6 +88,9 @@ export async function POST(req: NextRequest) {
       parsed.data.schedule,
       parsed.data.faq,
       parsed.data.highlight_video_url,
+      parsed.data.event_type,
+      parsed.data.meeting_link,
+      parsed.data.whatsapp_group_link,
       now,
       now,
     );

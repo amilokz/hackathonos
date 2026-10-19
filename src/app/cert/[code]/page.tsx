@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic';
 
 const TYPE_LABELS: Record<string, string> = {
   participant: 'Certificate of Participation',
+  attendee: 'Certificate of Participation',
   winner: 'Certificate of Achievement',
   judge: 'Certificate of Appreciation',
   sponsor: 'Certificate of Sponsorship',
@@ -121,6 +122,8 @@ export default async function CertificatePage({ params }: { params: { code: stri
               `In gratitude for your generous sponsorship of ${cert.event_name}.`}
             {cert.type === 'participant' &&
               `For participating in ${cert.event_name} and being part of the builder community.`}
+            {cert.type === 'attendee' &&
+              `For attending ${cert.event_name}.`}
           </p>
 
           <div className="mt-10 flex items-end justify-between gap-6 text-left">
