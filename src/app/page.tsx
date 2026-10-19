@@ -55,7 +55,7 @@ async function getLiveEvents() {
   const db = getDb();
   return (await db
     .prepare(
-      `SELECT e.id, e.name, e.slug, e.cover_url, e.description, e.start_date, e.end_date, e.updated_at,
+      `SELECT e.id, e.name, e.slug, e.cover_url, e.description, e.start_date, e.end_date,
               (SELECT COUNT(*) FROM teams t WHERE t.event_id = e.id AND t.approval_status = 'approved') AS team_count
        FROM events e WHERE e.status = 'published'
        ORDER BY e.start_date ASC, e.created_at DESC`
@@ -65,7 +65,7 @@ async function getLiveEvents() {
     name: string;
     slug: string;
     cover_url: string;
-    updated_at: string;
+    updated_at?: string;
     description: string;
     start_date: string;
     end_date: string;

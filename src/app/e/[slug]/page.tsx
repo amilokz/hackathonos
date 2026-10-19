@@ -92,7 +92,9 @@ export default async function PublicEventPage({ params }: { params: { slug: stri
   const dates = [formatDate(event.start_date), formatDate(event.end_date)].filter(Boolean).join(' → ');
   const coverRaw = event.cover_url?.trim() ? event.cover_url : null;
   // Cache-busting: append updated_at so browsers fetch the new image after an organizer update.
-  const cover = coverRaw && event.updated_at ? `${coverRaw}${coverRaw.includes('?') ? '&' : '?'}v=${encodeURIComponent(event.updated_at)}` : coverRaw;
+  // (updated_at may be absent on very old DBs — the URL works fine without it.)
+  const _ua = (event as { updated_at?: string }).updated_at;
+  const cover = coverRaw && _ua ? `${coverRaw}${coverRaw.includes('?') ? '&' : '?'}v=${encodeURIComponent(_ua)}` : coverRaw;
   const prizeLines = lines(event.prizes);
   const scheduleLines = lines(event.schedule);
   const faqItems = parseFaq(event.faq);
