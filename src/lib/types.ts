@@ -34,6 +34,7 @@ export interface EventRow {
   brand_logo_url?: string | null;
   brand_name?: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export interface TeamRow {
