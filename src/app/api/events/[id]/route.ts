@@ -76,6 +76,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     sets.push(`${key} = ?`);
     values.push(value);
   }
+  // Always bump updated_at so cover-image cache-busting works.
+  sets.push(`updated_at = ?`);
+  values.push(new Date().toISOString());
   values.push(event.id);
   await db.prepare(`UPDATE events SET ${sets.join(', ')} WHERE id = ?`).run(...values);
 

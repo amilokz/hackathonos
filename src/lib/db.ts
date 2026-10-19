@@ -387,6 +387,7 @@ const EVENT_COLUMN_ADDITIONS = [
   "ALTER TABLE events ADD COLUMN faq TEXT DEFAULT ''",
   "ALTER TABLE events ADD COLUMN highlight_video_url TEXT DEFAULT ''",
   "ALTER TABLE events ADD COLUMN require_team_approval INTEGER DEFAULT 0",
+  "ALTER TABLE events ADD COLUMN updated_at TEXT DEFAULT ''",
 ];
 
 async function ensureEventColumns(): Promise<void> {

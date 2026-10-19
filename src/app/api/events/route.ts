@@ -66,8 +66,8 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString();
   await db
     .prepare(
-      `INSERT INTO events (id, organizer_id, name, slug, description, logo_url, cover_url, start_date, end_date, entry_fee, prizes, schedule, faq, highlight_video_url, status, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
+      `INSERT INTO events (id, organizer_id, name, slug, description, logo_url, cover_url, start_date, end_date, entry_fee, prizes, schedule, faq, highlight_video_url, status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
     )
     .run(
       id,
@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
       parsed.data.schedule,
       parsed.data.faq,
       parsed.data.highlight_video_url,
+      now,
       now,
     );
 
